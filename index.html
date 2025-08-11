@@ -1,0 +1,149 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Gear Stat Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Enhanced Gear Stat Calculator</h1>
+        <p>
+            This tool calculates builds using <strong>masterworked T5 armor</strong> (5 pieces).
+        </p>
+        
+        <div class="section">
+            <h2>Step 1: Set Target Stats & Constraints</h2>
+            <div class="priority-grid">
+                <div class="input-group">
+                    <label for="health-controls">Health</label>
+                    <div class="stat-controls">
+                        <div class="stat-row">
+                            <input type="number" id="health" value="0" min="0" step="5" placeholder="Target">
+                            <input type="number" id="health-max" value="200" min="0" step="5" placeholder="Max">
+                            <select id="health-priority">
+                                <option value="normal">Normal</option>
+                                <option value="high">Prioritize</option>
+                                <option value="low">Deprioritize</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="melee-controls">Melee</label>
+                    <div class="stat-controls">
+                        <div class="stat-row">
+                            <input type="number" id="melee" value="0" min="0" step="5" placeholder="Target">
+                            <input type="number" id="melee-max" value="200" min="0" step="5" placeholder="Max">
+                            <select id="melee-priority">
+                                <option value="normal">Normal</option>
+                                <option value="high">Prioritize</option>
+                                <option value="low">Deprioritize</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="grenade-controls">Grenade</label>
+                    <div class="stat-controls">
+                        <div class="stat-row">
+                            <input type="number" id="grenade" value="0" min="0" step="5" placeholder="Target">
+                            <input type="number" id="grenade-max" value="200" min="0" step="5" placeholder="Max">
+                            <select id="grenade-priority">
+                                <option value="normal">Normal</option>
+                                <option value="high">Prioritize</option>
+                                <option value="low">Deprioritize</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="super-controls">Super</label>
+                    <div class="stat-controls">
+                        <div class="stat-row">
+                            <input type="number" id="super" value="0" min="0" step="5" placeholder="Target">
+                            <input type="number" id="super-max" value="200" min="0" step="5" placeholder="Max">
+                            <select id="super-priority">
+                                <option value="normal">Normal</option>
+                                <option value="high">Prioritize</option>
+                                <option value="low">Deprioritize</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="class-controls">Class</label>
+                    <div class="stat-controls">
+                        <div class="stat-row">
+                            <input type="number" id="class" value="0" min="0" step="5" placeholder="Target">
+                            <input type="number" id="class-max" value="200" min="0" step="5" placeholder="Max">
+                            <select id="class-priority">
+                                <option value="normal">Normal</option>
+                                <option value="high">Prioritize</option>
+                                <option value="low">Deprioritize</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="weapons-controls">Weapons</label>
+                    <div class="stat-controls">
+                        <div class="stat-row">
+                            <input type="number" id="weapons" value="0" min="0" step="5" placeholder="Target">
+                            <input type="number" id="weapons-max" value="200" min="0" step="5" placeholder="Max">
+                            <select id="weapons-priority">
+                                <option value="normal">Normal</option>
+                                <option value="high">Prioritize</option>
+                                <option value="low">Deprioritize</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Step 2: Select Standard Mods</h2>
+            <p>You have a max of 5 mods.</p>
+            <div class="input-grid mod-grid">
+                <div class="input-group">
+                    <label for="majorMods">Major Mods (+10)</label>
+                    <input type="number" id="majorMods" value="0" min="0" max="5">
+                </div>
+                <div class="input-group">
+                    <label for="minorMods">Minor Mods (+5)</label>
+                    <input type="number" id="minorMods" value="0" min="0" max="5">
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Step 3: Enable Advanced Mods (Optional)</h2>
+            <div class="toggle-switch">
+                <input type="checkbox" id="tuningModsToggle" class="toggle-switch-checkbox">
+                <label class="toggle-switch-label" for="tuningModsToggle">
+                    <span class="toggle-switch-inner"></span>
+                    <span class="toggle-switch-switch"></span>
+                </label>
+                <div class="toggle-description">
+                    <strong>Enable Stat Tuning Mods</strong>
+                    <small>Allows using up to 5 mods that shift stats (+5 to one, -5 to another) or add minor boosts (+1 to three non-primary stats). This may significantly increase calculation time.</small>
+                </div>
+            </div>
+        </div>
+        
+        <button id="calculateBtn">Calculate Builds</button>
+        <div id="results-container">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
