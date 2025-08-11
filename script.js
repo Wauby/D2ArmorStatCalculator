@@ -44,16 +44,90 @@
     let solutionsPageIndex = 0;
     const solutionsPerPage = 5;
 
+    // Create warning element for mod limits
+    function createModWarning() {
+        let warningElement = document.getElementById('mod-warning');
+        if (!warningElement) {
+            warningElement = document.createElement('div');
+            warningElement.id = 'mod-warning';
+            warningElement.style.cssText = `
+                color: #ff6b6b;
+                background-color: #ffe0e0;
+                border: 1px solid #ff6b6b;
+                border-radius: 4px;
+                padding: 8px 12px;
+                margin: 8px 0;
+                font-weight: bold;
+                display: none;
+            `;
+            // Insert after the minor mods input
+            minorModsInput.parentNode.insertBefore(warningElement, minorModsInput.nextSibling);
+        }
+        return warningElement;
+    }
+
+    const modWarning = createModWarning();
+
+    function checkModLimits() {
+        const majorValue = parseInt(majorModsInput.value) || 0;
+        const minorValue = parseInt(minorModsInput.value) || 0;
+        const totalMods = majorValue + minorValue;
+
+        if (totalMods > 5) {
+            modWarning.textContent = '⚠️ Warning: You can only equip a maximum of 5 normal mods total (Major + Minor combined)!';
+            modWarning.style.display = 'block';
+            calculateBtn.disabled = true;
+            calculateBtn.style.opacity = '0.5';
+            calculateBtn.style.cursor = 'not-allowed';
+        } else {
+            modWarning.style.display = 'none';
+            calculateBtn.disabled = false;
+            calculateBtn.style.opacity = '1';
+            calculateBtn.style.cursor = 'pointer';
+        }
+    }
+
     majorModsInput.addEventListener('input', () => {
         const majorValue = parseInt(majorModsInput.value) || 0;
-        minorModsInput.max = 5 - majorValue;
-    });
-    minorModsInput.addEventListener('input', () => {
         const minorValue = parseInt(minorModsInput.value) || 0;
-        majorModsInput.max = 5 - minorValue;
+
+        // Prevent entering values that would exceed 5 total
+        if (majorValue > 5) {
+            majorModsInput.value = 5;
+        }
+        if (majorValue + minorValue > 5) {
+            minorModsInput.value = Math.max(0, 5 - majorValue);
+        }
+
+        minorModsInput.max = Math.max(0, 5 - (parseInt(majorModsInput.value) || 0));
+        checkModLimits();
+    });
+
+    minorModsInput.addEventListener('input', () => {
+        const majorValue = parseInt(majorModsInput.value) || 0;
+        const minorValue = parseInt(minorModsInput.value) || 0;
+
+        // Prevent entering values that would exceed 5 total
+        if (minorValue > 5) {
+            minorModsInput.value = 5;
+        }
+        if (majorValue + minorValue > 5) {
+            majorModsInput.value = Math.max(0, 5 - minorValue);
+        }
+
+        majorModsInput.max = Math.max(0, 5 - (parseInt(minorModsInput.value) || 0));
+        checkModLimits();
     });
 
     calculateBtn.addEventListener('click', () => {
+        // Double-check mod limits before calculating
+        const majorValue = parseInt(majorModsInput.value) || 0;
+        const minorValue = parseInt(minorModsInput.value) || 0;
+        if (majorValue + minorValue > 5) {
+            alert('Cannot calculate: You have entered more than 5 normal mods total. Please adjust your mod counts.');
+            return;
+        }
+
         const targets = {
             h: parseInt(document.getElementById('health').value) || 0,
             m: parseInt(document.getElementById('melee').value) || 0,
@@ -440,4 +514,7 @@
             });
         }
     }
+
+    // Initialize mod limit checking on page load
+    checkModLimits();
 });
