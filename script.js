@@ -111,6 +111,8 @@
     }
 
     // Applies tuning, major, and minor mods to a base stat profile to reach targets.
+    // Applies tuning, major, and minor mods to a base stat profile to reach targets.
+    // Applies tuning, major, and minor mods to a base stat profile to reach targets.
     function applyMods(baseStats, targets, priorities, availableMods, useTuningMods) {
         let workingStats = { ...baseStats };
         const modsUsed = [];
@@ -118,6 +120,16 @@
         let remainingMinor = availableMods.minor;
         let remainingTuning = availableMods.tuning;
         const statKeys = Object.keys(targets);
+
+        // Get max stats from the HTML inputs. Use a default value if not specified.
+        const maxStats = {
+            h: parseInt(document.getElementById('health-max').value) || MAX_STAT_VALUE,
+            m: parseInt(document.getElementById('melee-max').value) || MAX_STAT_VALUE,
+            g: parseInt(document.getElementById('grenade-max').value) || MAX_STAT_VALUE,
+            s: parseInt(document.getElementById('super-max').value) || MAX_STAT_VALUE,
+            c: parseInt(document.getElementById('class-max').value) || MAX_STAT_VALUE,
+            w: parseInt(document.getElementById('weapons-max').value) || MAX_STAT_VALUE,
+        };
 
         // --- Phase 1: Strategic Tuning Mod Application (if enabled) ---
         if (useTuningMods) {
@@ -127,7 +139,8 @@
                 // Find the best stat to increase (highest priority deficit)
                 const deficits = statKeys
                     .map(stat => ({ stat, deficit: Math.max(0, targets[stat] - workingStats[stat]) }))
-                    .filter(d => d.deficit > 0 && workingStats[d.stat] < MAX_STAT_VALUE)
+                    // The crucial change: filter out any stat that is already at its max.
+                    .filter(d => d.deficit > 0 && workingStats[d.stat] < maxStats[d.stat])
                     .sort((a, b) => {
                         const priorityWeight = { high: 3, normal: 2, low: 1 };
                         return priorityWeight[priorities[b.stat]] - priorityWeight[priorities[a.stat]];
@@ -138,7 +151,8 @@
 
                 // Find the best stat to decrease (lowest priority, most excess)
                 const sources = statKeys
-                    // This is a corrected line from a previous version
+                    // Ensure we don't take points from the stat we're increasing.
+                    // Also, a stat can't go below 0 (though the armor starts with a base of 5+).
                     .filter(stat => stat !== statToIncrease && workingStats[stat] >= 5)
                     .map(stat => {
                         let score = 0;
@@ -152,8 +166,9 @@
                 if (sources.length === 0) break; // No stat to safely take points from
                 const statToDecrease = sources[0].stat;
 
-                // Apply the tuning mod
-                workingStats[statToIncrease] = Math.min(MAX_STAT_VALUE, workingStats[statToIncrease] + 5);
+                // Apply the tuning mod.
+                // Use Math.min to ensure the stat doesn't go over the max.
+                workingStats[statToIncrease] = Math.min(maxStats[statToIncrease], workingStats[statToIncrease] + 5);
                 workingStats[statToDecrease] -= 5;
                 modsUsed.push(`Tuning: +5 ${getStatName(statToIncrease)}, -5 ${getStatName(statToDecrease)}`);
                 remainingTuning--;
@@ -170,19 +185,24 @@
         });
 
         for (const stat of statOrder) {
-            let deficit = Math.max(0, targets[stat] - workingStats[stat]);
-            while (deficit >= 10 && remainingMajor > 0 && workingStats[stat] < MAX_STAT_VALUE) {
+            // Apply major mods
+            while (remainingMajor > 0 && workingStats[stat] < targets[stat] && workingStats[stat] + 10 <= maxStats[stat]) {
                 workingStats[stat] += 10;
-                deficit -= 10;
                 remainingMajor--;
                 modsUsed.push(`Major ${getStatName(stat)} Mod (+10)`);
             }
-            while (deficit > 0 && remainingMinor > 0 && workingStats[stat] < MAX_STAT_VALUE) {
+
+            // Apply minor mods
+            while (remainingMinor > 0 && workingStats[stat] < targets[stat] && workingStats[stat] + 5 <= maxStats[stat]) {
                 workingStats[stat] += 5;
-                deficit -= 5;
                 remainingMinor--;
                 modsUsed.push(`Minor ${getStatName(stat)} Mod (+5)`);
             }
+        }
+
+        // Post-mod cleanup: Ensure no stat goes above its max value
+        for (const stat in workingStats) {
+            workingStats[stat] = Math.min(workingStats[stat], maxStats[stat]);
         }
 
         return { finalStats: workingStats, modsUsed };
