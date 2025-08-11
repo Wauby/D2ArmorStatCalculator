@@ -70,6 +70,14 @@
             c: document.getElementById('class-priority').value,
             w: document.getElementById('weapons-priority').value,
         };
+        const maxStats = {
+            h: getMaxStatValue('health-max'),
+            m: getMaxStatValue('melee-max'),
+            g: getMaxStatValue('grenade-max'),
+            s: getMaxStatValue('super-max'),
+            c: getMaxStatValue('class-max'),
+            w: getMaxStatValue('weapons-max'),
+        };
         const availableMods = {
             major: parseInt(majorModsInput.value) || 0,
             minor: parseInt(minorModsInput.value) || 0,
@@ -80,64 +88,63 @@
         resultsContainer.innerHTML = '<h2><span class="loader"></span>Calculating... This may take a moment.</h2>';
 
         setTimeout(() => {
-            allSolutions = findSolutions(targets, priorities, availableMods, useTuningMods);
+            allSolutions = findSolutions(targets, priorities, maxStats, availableMods, useTuningMods);
             solutionsPageIndex = 0;
             displaySolutions();
         }, 50);
     });
+
+    function getMaxStatValue(inputId) {
+        const input = document.getElementById(inputId);
+        if (input && input.value !== '') {
+            return parseInt(input.value);
+        }
+        return MAX_STAT_VALUE; // Only use default if input is empty/doesn't exist
+    }
 
     function getStatName(key) {
         const statNames = { h: 'Health', m: 'Melee', g: 'Grenade', s: 'Super', c: 'Class', w: 'Weapons' };
         return statNames[key] || key;
     }
 
-    // Calculates a score for a build based on priorities and how well it meets targets.
-    function calculatePriorityScore(finalStats, targets, priorities, meetsAllTargets) {
+    // Calculates a score for a build based on priorities, targets, and max stat preferences.
+    function calculatePriorityScore(finalStats, targets, priorities, maxStats, meetsAllTargets) {
         let score = meetsAllTargets ? 1000 : 0; // Huge bonus for meeting all targets.
+
         for (const stat of Object.keys(finalStats)) {
             const value = finalStats[stat];
             const target = targets[stat];
+            const maxStat = maxStats[stat];
             const deficit = Math.max(0, target - value);
             const excess = Math.max(0, value - target);
+            const overMax = Math.max(0, value - maxStat);
 
             const priorityMultiplier = { high: 10, normal: 5, low: 2 };
+
+            // Penalty for not meeting target
             score -= deficit * priorityMultiplier[priorities[stat]];
 
+            // Reward/penalty for excess based on priority
             if (priorities[stat] === 'high') score += excess * 1.5;
             else if (priorities[stat] === 'normal') score += excess * 0.5;
             else score -= excess * 2; // Penalize wasted stats on low-priority.
+
+            // Additional penalty for exceeding max stat preferences (but don't make it impossible)
+            if (overMax > 0) {
+                score -= overMax * 3; // Moderate penalty for exceeding max preferences
+            }
         }
         return Math.round(score);
     }
 
     // Applies tuning, major, and minor mods to a base stat profile to reach targets.
-    // Applies tuning, major, and minor mods to a base stat profile to reach targets.
-    // Applies tuning, major, and minor mods to a base stat profile to reach targets.
-    function applyMods(baseStats, targets, priorities, availableMods, useTuningMods) {
+    function applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods) {
         let workingStats = { ...baseStats };
         const modsUsed = [];
         let remainingMajor = availableMods.major;
         let remainingMinor = availableMods.minor;
         let remainingTuning = availableMods.tuning;
         const statKeys = Object.keys(targets);
-
-        // Get max stats from the HTML inputs. Handle 0 values properly by checking if the input exists and has a value.
-        const maxStats = {
-            h: getMaxStatValue('health-max'),
-            m: getMaxStatValue('melee-max'),
-            g: getMaxStatValue('grenade-max'),
-            s: getMaxStatValue('super-max'),
-            c: getMaxStatValue('class-max'),
-            w: getMaxStatValue('weapons-max'),
-        };
-
-        function getMaxStatValue(inputId) {
-            const input = document.getElementById(inputId);
-            if (input && input.value !== '') {
-                return parseInt(input.value);
-            }
-            return MAX_STAT_VALUE; // Only use default if input is empty/doesn't exist
-        }
 
         // --- Phase 1: Strategic Tuning Mod Application (if enabled) ---
         if (useTuningMods) {
@@ -147,8 +154,7 @@
                 // Find the best stat to increase (highest priority deficit)
                 const deficits = statKeys
                     .map(stat => ({ stat, deficit: Math.max(0, targets[stat] - workingStats[stat]) }))
-                    // The crucial change: filter out any stat that is already at its max.
-                    .filter(d => d.deficit > 0 && workingStats[d.stat] < maxStats[d.stat])
+                    .filter(d => d.deficit > 0) // Only consider stats that need improvement
                     .sort((a, b) => {
                         const priorityWeight = { high: 3, normal: 2, low: 1 };
                         return priorityWeight[priorities[b.stat]] - priorityWeight[priorities[a.stat]];
@@ -157,16 +163,18 @@
                 if (deficits.length === 0) break; // No more deficits to fill
                 const statToIncrease = deficits[0].stat;
 
-                // Find the best stat to decrease (lowest priority, most excess)
+                // Find the best stat to decrease (prefer stats over max, then low priority, then most excess)
                 const sources = statKeys
-                    // Ensure we don't take points from the stat we're increasing.
-                    // Also, a stat can't go below the max stat value (respecting user's max constraint).
-                    .filter(stat => stat !== statToIncrease && workingStats[stat] > maxStats[stat])
+                    .filter(stat => stat !== statToIncrease && workingStats[stat] >= 5) // Can't take from target stat, need at least 5 points
                     .map(stat => {
                         let score = 0;
+                        // Strongly prefer taking from stats that are over their max preference
+                        if (workingStats[stat] > maxStats[stat]) score += 1000;
+                        // Then prefer low priority stats
                         if (priorities[stat] === 'low') score += 100;
-                        if (priorities[stat] === 'normal') score += 50;
-                        score += Math.max(0, workingStats[stat] - targets[stat]); // Add excess points to score
+                        else if (priorities[stat] === 'normal') score += 50;
+                        // Then prefer stats with excess over target
+                        score += Math.max(0, workingStats[stat] - targets[stat]);
                         return { stat, score };
                     })
                     .sort((a, b) => b.score - a.score);
@@ -174,13 +182,11 @@
                 if (sources.length === 0) break; // No stat to safely take points from
                 const statToDecrease = sources[0].stat;
 
-                // Apply the tuning mod only if we can increase the target stat without exceeding its max
-                if (workingStats[statToIncrease] + 5 <= maxStats[statToIncrease]) {
-                    workingStats[statToIncrease] += 5;
-                    workingStats[statToDecrease] -= 5;
-                    modsUsed.push(`Tuning: +5 ${getStatName(statToIncrease)}, -5 ${getStatName(statToDecrease)}`);
-                    remainingTuning--;
-                }
+                // Apply the tuning mod
+                workingStats[statToIncrease] += 5;
+                workingStats[statToDecrease] -= 5;
+                modsUsed.push(`Tuning: +5 ${getStatName(statToIncrease)}, -5 ${getStatName(statToDecrease)}`);
+                remainingTuning--;
             }
         }
 
@@ -194,22 +200,29 @@
         });
 
         for (const stat of statOrder) {
-            // Apply major mods
-            while (remainingMajor > 0 && workingStats[stat] < targets[stat] && workingStats[stat] + 10 <= maxStats[stat]) {
-                workingStats[stat] += 10;
-                remainingMajor--;
-                modsUsed.push(`Major ${getStatName(stat)} Mod (+10)`);
+            // Apply major mods - prefer staying under max but don't prevent if needed for target
+            while (remainingMajor > 0 && workingStats[stat] < targets[stat]) {
+                // Prefer not to exceed max, but allow if necessary to meet target
+                if (workingStats[stat] + 10 <= maxStats[stat] || workingStats[stat] < targets[stat]) {
+                    workingStats[stat] += 10;
+                    remainingMajor--;
+                    modsUsed.push(`Major ${getStatName(stat)} Mod (+10)`);
+                } else {
+                    break; // Don't add if it would exceed max and we've already met target
+                }
             }
 
-            // Apply minor mods
-            while (remainingMinor > 0 && workingStats[stat] < targets[stat] && workingStats[stat] + 5 <= maxStats[stat]) {
-                workingStats[stat] += 5;
-                remainingMinor--;
-                modsUsed.push(`Minor ${getStatName(stat)} Mod (+5)`);
+            // Apply minor mods - same logic as major
+            while (remainingMinor > 0 && workingStats[stat] < targets[stat]) {
+                if (workingStats[stat] + 5 <= maxStats[stat] || workingStats[stat] < targets[stat]) {
+                    workingStats[stat] += 5;
+                    remainingMinor--;
+                    modsUsed.push(`Minor ${getStatName(stat)} Mod (+5)`);
+                } else {
+                    break;
+                }
             }
         }
-
-        // No post-mod cleanup needed - we respect max values during mod application
 
         return { finalStats: workingStats, modsUsed };
     }
@@ -233,7 +246,7 @@
         }).sort((a, b) => b.efficiencyScore - a.efficiencyScore);
     }
 
-    function findSolutions(targets, priorities, availableMods, useTuningMods) {
+    function findSolutions(targets, priorities, maxStats, availableMods, useTuningMods) {
         const solutions = [];
         const processedCombinations = new Set();
         const maxSolutions = 500;
@@ -261,10 +274,10 @@
                                 }
                             }
 
-                            const result = applyMods(baseStats, targets, priorities, availableMods, useTuningMods);
+                            const result = applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods);
 
                             const meetsAllTargets = Object.keys(targets).every(stat => result.finalStats[stat] >= targets[stat]);
-                            const priorityScore = calculatePriorityScore(result.finalStats, targets, priorities, meetsAllTargets);
+                            const priorityScore = calculatePriorityScore(result.finalStats, targets, priorities, maxStats, meetsAllTargets);
 
                             solutions.push({
                                 // We're now only storing the unique armor piece names, not their assigned slots
@@ -282,10 +295,16 @@
         return solutions;
     }
 
-    function formatStats(stats) {
+    function formatStats(stats, maxStats) {
         // Sort stats to always display in the same order
         const orderedStats = ['h', 'm', 'g', 's', 'c', 'w'];
-        return orderedStats.map(stat => `${getStatName(stat).substring(0, 1)}:${stats[stat]}`).join(' ');
+        return orderedStats.map(stat => {
+            const value = stats[stat];
+            const maxStat = maxStats[stat];
+            const isOverMax = value > maxStat && maxStat < MAX_STAT_VALUE; // Only show as over-max if user set a specific limit
+            const displayValue = isOverMax ? `${value}⚠️` : value;
+            return `${getStatName(stat).substring(0, 1)}:${displayValue}`;
+        }).join(' ');
     }
 
     function displaySolutions() {
@@ -296,6 +315,15 @@
             s: parseInt(document.getElementById('super').value) || 0,
             c: parseInt(document.getElementById('class').value) || 0,
             w: parseInt(document.getElementById('weapons').value) || 0,
+        };
+
+        const maxStats = {
+            h: getMaxStatValue('health-max'),
+            m: getMaxStatValue('melee-max'),
+            g: getMaxStatValue('grenade-max'),
+            s: getMaxStatValue('super-max'),
+            c: getMaxStatValue('class-max'),
+            w: getMaxStatValue('weapons-max'),
         };
 
         // Remove duplicate solutions.
@@ -382,7 +410,7 @@
                     <div class="stats-breakdown">
                         <h4>Final Stats</h4>
                         <div class="final-stats-display">
-                            ${formatStats(solution.final)}
+                            ${formatStats(solution.final, maxStats)}
                         </div>
                     </div>
                 </div>
