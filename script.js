@@ -121,15 +121,23 @@
         let remainingTuning = availableMods.tuning;
         const statKeys = Object.keys(targets);
 
-        // Get max stats from the HTML inputs. Use a default value if not specified.
+        // Get max stats from the HTML inputs. Handle 0 values properly by checking if the input exists and has a value.
         const maxStats = {
-            h: parseInt(document.getElementById('health-max').value) || MAX_STAT_VALUE,
-            m: parseInt(document.getElementById('melee-max').value) || MAX_STAT_VALUE,
-            g: parseInt(document.getElementById('grenade-max').value) || MAX_STAT_VALUE,
-            s: parseInt(document.getElementById('super-max').value) || MAX_STAT_VALUE,
-            c: parseInt(document.getElementById('class-max').value) || MAX_STAT_VALUE,
-            w: parseInt(document.getElementById('weapons-max').value) || MAX_STAT_VALUE,
+            h: getMaxStatValue('health-max'),
+            m: getMaxStatValue('melee-max'),
+            g: getMaxStatValue('grenade-max'),
+            s: getMaxStatValue('super-max'),
+            c: getMaxStatValue('class-max'),
+            w: getMaxStatValue('weapons-max'),
         };
+
+        function getMaxStatValue(inputId) {
+            const input = document.getElementById(inputId);
+            if (input && input.value !== '') {
+                return parseInt(input.value);
+            }
+            return MAX_STAT_VALUE; // Only use default if input is empty/doesn't exist
+        }
 
         // --- Phase 1: Strategic Tuning Mod Application (if enabled) ---
         if (useTuningMods) {
