@@ -160,8 +160,8 @@
                 // Find the best stat to decrease (lowest priority, most excess)
                 const sources = statKeys
                     // Ensure we don't take points from the stat we're increasing.
-                    // Also, a stat can't go below 0 (though the armor starts with a base of 5+).
-                    .filter(stat => stat !== statToIncrease && workingStats[stat] >= 5)
+                    // Also, a stat can't go below the max stat value (respecting user's max constraint).
+                    .filter(stat => stat !== statToIncrease && workingStats[stat] > maxStats[stat])
                     .map(stat => {
                         let score = 0;
                         if (priorities[stat] === 'low') score += 100;
@@ -174,12 +174,13 @@
                 if (sources.length === 0) break; // No stat to safely take points from
                 const statToDecrease = sources[0].stat;
 
-                // Apply the tuning mod.
-                // Use Math.min to ensure the stat doesn't go over the max.
-                workingStats[statToIncrease] = Math.min(maxStats[statToIncrease], workingStats[statToIncrease] + 5);
-                workingStats[statToDecrease] -= 5;
-                modsUsed.push(`Tuning: +5 ${getStatName(statToIncrease)}, -5 ${getStatName(statToDecrease)}`);
-                remainingTuning--;
+                // Apply the tuning mod only if we can increase the target stat without exceeding its max
+                if (workingStats[statToIncrease] + 5 <= maxStats[statToIncrease]) {
+                    workingStats[statToIncrease] += 5;
+                    workingStats[statToDecrease] -= 5;
+                    modsUsed.push(`Tuning: +5 ${getStatName(statToIncrease)}, -5 ${getStatName(statToDecrease)}`);
+                    remainingTuning--;
+                }
             }
         }
 
@@ -208,10 +209,7 @@
             }
         }
 
-        // Post-mod cleanup: Ensure no stat goes above its max value
-        for (const stat in workingStats) {
-            workingStats[stat] = Math.min(workingStats[stat], maxStats[stat]);
-        }
+        // No post-mod cleanup needed - we respect max values during mod application
 
         return { finalStats: workingStats, modsUsed };
     }
