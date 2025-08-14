@@ -7,7 +7,7 @@
 }
 
 .container {
-	max-width: 1200px;
+	max-width: 1400px;
 	margin: 0 auto;
 	background-color: #242526;
 	padding: 2rem;
@@ -40,8 +40,16 @@ h2 {
 
 .input-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-	gap: 1.5rem;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 0.5rem;
+}
+
+/* New stats grid for the main stat section */
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 1rem;
+	min-height: fit-content;
 }
 
 .priority-grid {
@@ -73,12 +81,16 @@ h2 {
 .input-group {
 	display: flex;
 	flex-direction: column;
+	min-width: 0; /* Prevents overflow */
 }
 
 	.input-group label {
 		font-weight: bold;
 		margin-bottom: 0.5em;
 		color: #b0b3b8;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.input-group input, .input-group select {
@@ -90,6 +102,7 @@ h2 {
 		box-sizing: border-box;
 		background-color: #3a3b3c;
 		color: #e4e6ea;
+		min-width: 0;
 	}
 
 		.input-group input:focus, .input-group select:focus {
@@ -399,36 +412,6 @@ button {
 		content: "🔧 ";
 	}
 
-/* New styles for custom fragment section */
-.custom-fragment-section {
-	margin-top: 1rem;
-	padding: 1rem;
-	background-color: #2d2e30;
-	border-radius: 6px;
-	border: 1px solid #3a3b3c;
-}
-
-.fragment-input-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-	gap: 1rem;
-	margin-top: 1rem;
-}
-
-.fragment-description {
-	margin-top: 1rem;
-	padding: 0.8rem;
-	background-color: #3a3b3c;
-	border-radius: 4px;
-	border-left: 3px solid #1877f2;
-}
-
-	.fragment-description p {
-		margin: 0;
-		font-size: 0.9rem;
-		color: #b0b3b8;
-	}
-
 .fragment-bonus {
 	color: #00d4aa;
 	font-weight: bold;
@@ -456,7 +439,27 @@ button {
 	}
 }
 
+/* Responsive Design */
+@media (max-width: 1200px) {
+	.stats-grid {
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.8rem;
+	}
+}
+
+@media (max-width: 900px) {
+	.stats-grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.8rem;
+	}
+}
+
 @media (max-width: 600px) {
+	.stats-grid {
+		grid-template-columns: 1fr;
+		gap: 1rem;
+	}
+
 	.solution-grid {
 		grid-template-columns: 1fr;
 		gap: 1rem;
