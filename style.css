@@ -359,6 +359,36 @@ button {
 		content: "⚡ ";
 	}
 
+/* New styles for custom fragment section */
+.custom-fragment-section {
+	margin-top: 1rem;
+	padding: 1rem;
+	background-color: #2d2e30;
+	border-radius: 6px;
+	border: 1px solid #3a3b3c;
+}
+
+.fragment-input-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 1rem;
+	margin-top: 1rem;
+}
+
+.fragment-description {
+	margin-top: 1rem;
+	padding: 0.8rem;
+	background-color: #3a3b3c;
+	border-radius: 4px;
+	border-left: 3px solid #1877f2;
+}
+
+	.fragment-description p {
+		margin: 0;
+		font-size: 0.9rem;
+		color: #b0b3b8;
+	}
+
 /* Special styling for custom armor pieces */
 .custom-piece {
 	color: #bb86fc !important;
@@ -367,6 +397,45 @@ button {
 
 	.custom-piece::before {
 		content: "🔧 ";
+	}
+
+/* New styles for custom fragment section */
+.custom-fragment-section {
+	margin-top: 1rem;
+	padding: 1rem;
+	background-color: #2d2e30;
+	border-radius: 6px;
+	border: 1px solid #3a3b3c;
+}
+
+.fragment-input-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 1rem;
+	margin-top: 1rem;
+}
+
+.fragment-description {
+	margin-top: 1rem;
+	padding: 0.8rem;
+	background-color: #3a3b3c;
+	border-radius: 4px;
+	border-left: 3px solid #1877f2;
+}
+
+	.fragment-description p {
+		margin: 0;
+		font-size: 0.9rem;
+		color: #b0b3b8;
+	}
+
+.fragment-bonus {
+	color: #00d4aa;
+	font-weight: bold;
+}
+
+	.fragment-bonus::before {
+		content: "⬆️ ";
 	}
 
 .loader {
@@ -404,6 +473,10 @@ button {
 	}
 
 	.custom-armor-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.fragment-input-grid {
 		grid-template-columns: 1fr;
 	}
 

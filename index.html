@@ -173,7 +173,54 @@
         </div>
 
         <div class="section">
-            <h2>Step 3: Select Standard Mods</h2>
+            <h2>Step 3: Custom Fragment/Font Mods (Optional)</h2>
+            <div class="toggle-switch">
+                <input type="checkbox" id="customFragmentToggle" class="toggle-switch-checkbox">
+                <label class="toggle-switch-label" for="customFragmentToggle">
+                    <span class="toggle-switch-inner"></span>
+                    <span class="toggle-switch-switch"></span>
+                </label>
+                <div class="toggle-description">
+                    <strong>Enable Custom Fragment/Font Mods</strong>
+                    <small>Add custom stat bonuses from fragments, font mods, or other sources.</small>
+                </div>
+            </div>
+
+            <div id="customFragmentSection" class="custom-fragment-section" style="display: none;">
+                <div class="fragment-input-grid">
+                    <div class="input-group">
+                        <label for="fragmentHealth">Health Bonus</label>
+                        <input type="number" id="fragmentHealth" value="0" min="0" max="100" step="5">
+                    </div>
+                    <div class="input-group">
+                        <label for="fragmentMelee">Melee Bonus</label>
+                        <input type="number" id="fragmentMelee" value="0" min="0" max="100" step="5">
+                    </div>
+                    <div class="input-group">
+                        <label for="fragmentGrenade">Grenade Bonus</label>
+                        <input type="number" id="fragmentGrenade" value="0" min="0" max="100" step="5">
+                    </div>
+                    <div class="input-group">
+                        <label for="fragmentSuper">Super Bonus</label>
+                        <input type="number" id="fragmentSuper" value="0" min="0" max="100" step="5">
+                    </div>
+                    <div class="input-group">
+                        <label for="fragmentClass">Class Bonus</label>
+                        <input type="number" id="fragmentClass" value="0" min="0" max="100" step="5">
+                    </div>
+                    <div class="input-group">
+                        <label for="fragmentWeapons">Weapons Bonus</label>
+                        <input type="number" id="fragmentWeapons" value="0" min="0" max="100" step="5">
+                    </div>
+                </div>
+                <div class="fragment-description">
+                    <p><strong>Note:</strong> These bonuses are applied after all armor and regular mods are calculated. Use this for fragment mods, font mods, or any other stat bonuses not covered by regular armor mods.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Step 4: Select Standard Mods</h2>
             <p>You have a max of 5 mods.</p>
             <div class="input-grid mod-grid">
                 <div class="input-group">
@@ -188,7 +235,7 @@
         </div>
 
         <div class="section">
-            <h2>Step 4: Enable Advanced Mods (Optional)</h2>
+            <h2>Step 5: Enable Advanced Mods (Optional)</h2>
             <div class="toggle-switch">
                 <input type="checkbox" id="tuningModsToggle" class="toggle-switch-checkbox">
                 <label class="toggle-switch-label" for="tuningModsToggle">

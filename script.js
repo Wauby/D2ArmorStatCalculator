@@ -76,6 +76,8 @@
     const customArmorToggle = document.getElementById('customArmorToggle');
     const customArmorSection = document.getElementById('customArmorSection');
     const exoticArmorToggle = document.getElementById('exoticArmorToggle');
+    const customFragmentToggle = document.getElementById('customFragmentToggle');
+    const customFragmentSection = document.getElementById('customFragmentSection');
     const MAX_STAT_VALUE = 200;
 
     let allSolutions = [];
@@ -85,6 +87,11 @@
     // Toggle custom armor section visibility
     customArmorToggle.addEventListener('change', () => {
         customArmorSection.style.display = customArmorToggle.checked ? 'block' : 'none';
+    });
+
+    // Toggle custom fragment section visibility
+    customFragmentToggle.addEventListener('change', () => {
+        customFragmentSection.style.display = customFragmentToggle.checked ? 'block' : 'none';
     });
 
     // Create warning element for mod limits
@@ -179,6 +186,22 @@
         return { name, stats, isCustom: true };
     }
 
+    // Get custom fragment bonuses if enabled
+    function getCustomFragmentBonuses() {
+        if (!customFragmentToggle.checked) {
+            return { h: 0, m: 0, g: 0, s: 0, c: 0, w: 0 };
+        }
+
+        return {
+            h: parseInt(document.getElementById('fragmentHealth').value) || 0,
+            m: parseInt(document.getElementById('fragmentMelee').value) || 0,
+            g: parseInt(document.getElementById('fragmentGrenade').value) || 0,
+            s: parseInt(document.getElementById('fragmentSuper').value) || 0,
+            c: parseInt(document.getElementById('fragmentClass').value) || 0,
+            w: parseInt(document.getElementById('fragmentWeapons').value) || 0
+        };
+    }
+
     // Get available armor pieces based on settings
     function getAvailableArmorPieces() {
         let availablePieces = [...armorData];
@@ -232,11 +255,12 @@
         const useTuningMods = document.getElementById('tuningModsToggle').checked;
         const customArmorPiece = getCustomArmorPiece();
         const useExoticArmor = exoticArmorToggle.checked;
+        const customFragmentBonuses = getCustomFragmentBonuses();
 
         resultsContainer.innerHTML = '<h2><span class="loader"></span>Calculating... This may take a moment.</h2>';
 
         setTimeout(() => {
-            allSolutions = findSolutions(targets, priorities, maxStats, availableMods, useTuningMods, customArmorPiece, useExoticArmor);
+            allSolutions = findSolutions(targets, priorities, maxStats, availableMods, useTuningMods, customArmorPiece, useExoticArmor, customFragmentBonuses);
             solutionsPageIndex = 0;
             displaySolutions();
         }, 50);
@@ -286,13 +310,29 @@
     }
 
     // Applies tuning, major, and minor mods to a base stat profile to reach targets.
-    function applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods) {
+    function applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods, customFragmentBonuses) {
         let workingStats = { ...baseStats };
         const modsUsed = [];
         let remainingMajor = availableMods.major;
         let remainingMinor = availableMods.minor;
         let remainingTuning = availableMods.tuning;
         const statKeys = Object.keys(targets);
+
+        // --- Phase 0: Apply Custom Fragment Bonuses ---
+        let hasFragmentBonuses = false;
+        for (const stat in customFragmentBonuses) {
+            if (customFragmentBonuses[stat] > 0) {
+                workingStats[stat] += customFragmentBonuses[stat];
+                hasFragmentBonuses = true;
+            }
+        }
+        if (hasFragmentBonuses) {
+            const fragmentDescription = Object.keys(customFragmentBonuses)
+                .filter(stat => customFragmentBonuses[stat] > 0)
+                .map(stat => `+${customFragmentBonuses[stat]} ${getStatName(stat)}`)
+                .join(', ');
+            modsUsed.push(`Fragment/Font Mods: ${fragmentDescription}`);
+        }
 
         // --- Phase 1: Strategic Tuning Mod Application (if enabled) ---
         if (useTuningMods) {
@@ -394,7 +434,7 @@
         }).sort((a, b) => b.efficiencyScore - a.efficiencyScore);
     }
 
-    function findSolutions(targets, priorities, maxStats, availableMods, useTuningMods, customArmorPiece, useExoticArmor) {
+    function findSolutions(targets, priorities, maxStats, availableMods, useTuningMods, customArmorPiece, useExoticArmor, customFragmentBonuses) {
         const solutions = [];
         const processedCombinations = new Set();
         const maxSolutions = 500;
@@ -481,7 +521,7 @@
                 }
             }
 
-            const result = applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods);
+            const result = applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods, customFragmentBonuses);
 
             const meetsAllTargets = Object.keys(targets).every(stat => result.finalStats[stat] >= targets[stat]);
             const priorityScore = calculatePriorityScore(result.finalStats, targets, priorities, maxStats, meetsAllTargets);
@@ -597,7 +637,12 @@
                 const count = modCounts[modName];
                 const countString = count > 1 ? ` x${count}` : '';
                 const isTuning = modName.startsWith('Tuning');
-                return `<div class="mod-item ${isTuning ? 'tuning-mod' : ''}"><span>${modName}${countString}</span></div>`;
+                const isFragment = modName.startsWith('Fragment/Font');
+                let cssClass = '';
+                if (isTuning) cssClass = 'tuning-mod';
+                else if (isFragment) cssClass = 'fragment-bonus';
+
+                return `<div class="mod-item ${cssClass}"><span>${modName}${countString}</span></div>`;
             }).join('');
 
             html += `
