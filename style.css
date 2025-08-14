@@ -1,4 +1,4 @@
-body {
+﻿body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	background-color: #1a1a1a;
 	color: #e4e6ea;
@@ -52,6 +52,22 @@ h2 {
 
 .mod-grid {
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* New styles for custom armor section */
+.custom-armor-section {
+	margin-top: 1rem;
+	padding: 1rem;
+	background-color: #2d2e30;
+	border-radius: 6px;
+	border: 1px solid #3a3b3c;
+}
+
+.custom-armor-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 1rem;
+	margin-top: 1rem;
 }
 
 .input-group {
@@ -137,6 +153,12 @@ button {
 	button:hover {
 		background-color: #166fe5;
 		box-shadow: 0 2px 8px rgba(24, 119, 242, 0.4);
+	}
+
+	button:disabled {
+		background-color: #5a5a5a;
+		cursor: not-allowed;
+		opacity: 0.5;
 	}
 
 #results-container {
@@ -258,9 +280,21 @@ button {
 		color: #4caf50;
 	}
 
+.final-stats-display {
+	font-family: 'Courier New', monospace;
+	font-size: 1.1rem;
+	font-weight: bold;
+	color: #4caf50;
+	background-color: #1a2f1f;
+	padding: 0.8rem;
+	border-radius: 4px;
+	border: 1px solid #2d5a3d;
+}
+
 .toggle-switch {
 	display: flex;
 	align-items: center;
+	margin-bottom: 1rem;
 }
 
 .toggle-switch-checkbox {
@@ -315,6 +349,26 @@ button {
 		color: #8a8d93;
 	}
 
+/* Special styling for exotic armor pieces */
+.exotic-piece {
+	color: #f1c40f !important;
+	font-weight: bold;
+}
+
+	.exotic-piece::before {
+		content: "⚡ ";
+	}
+
+/* Special styling for custom armor pieces */
+.custom-piece {
+	color: #bb86fc !important;
+	font-weight: bold;
+}
+
+	.custom-piece::before {
+		content: "🔧 ";
+	}
+
 .loader {
 	display: inline-block;
 	width: 1em;
@@ -346,6 +400,10 @@ button {
 	}
 
 	.priority-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.custom-armor-grid {
 		grid-template-columns: 1fr;
 	}
 

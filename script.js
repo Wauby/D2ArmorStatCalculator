@@ -34,15 +34,58 @@
         { name: "Brawler (Tertiary: Class)", stats: { h: 25, m: 30, g: 5, s: 5, c: 20, w: 5 } }
     ];
 
+    // T2 Exotic Armor Stats: Primary = 30, Secondary = 20, Tertiary = 13
+    // Masterworked adds +2 to the 3 stats that don't have primary/secondary/tertiary
+    const exoticArmorData = [
+        // Bulwark: Health-Class
+        { name: "Exotic Bulwark (Tertiary: Melee)", stats: { h: 30, m: 13, g: 2, s: 2, c: 20, w: 2 }, isExotic: true },
+        { name: "Exotic Bulwark (Tertiary: Grenade)", stats: { h: 30, m: 2, g: 13, s: 2, c: 20, w: 2 }, isExotic: true },
+        { name: "Exotic Bulwark (Tertiary: Super)", stats: { h: 30, m: 2, g: 2, s: 13, c: 20, w: 2 }, isExotic: true },
+        { name: "Exotic Bulwark (Tertiary: Weapons)", stats: { h: 30, m: 2, g: 2, s: 2, c: 20, w: 13 }, isExotic: true },
+        // Specialist: Class-Weapons
+        { name: "Exotic Specialist (Tertiary: Health)", stats: { h: 13, m: 2, g: 2, s: 2, c: 30, w: 20 }, isExotic: true },
+        { name: "Exotic Specialist (Tertiary: Melee)", stats: { h: 2, m: 13, g: 2, s: 2, c: 30, w: 20 }, isExotic: true },
+        { name: "Exotic Specialist (Tertiary: Grenade)", stats: { h: 2, m: 2, g: 13, s: 2, c: 30, w: 20 }, isExotic: true },
+        { name: "Exotic Specialist (Tertiary: Super)", stats: { h: 2, m: 2, g: 2, s: 13, c: 30, w: 20 }, isExotic: true },
+        // Gunner: Weapons-Grenade
+        { name: "Exotic Gunner (Tertiary: Health)", stats: { h: 13, m: 2, g: 20, s: 2, c: 2, w: 30 }, isExotic: true },
+        { name: "Exotic Gunner (Tertiary: Melee)", stats: { h: 2, m: 13, g: 20, s: 2, c: 2, w: 30 }, isExotic: true },
+        { name: "Exotic Gunner (Tertiary: Super)", stats: { h: 2, m: 2, g: 20, s: 13, c: 2, w: 30 }, isExotic: true },
+        { name: "Exotic Gunner (Tertiary: Class)", stats: { h: 2, m: 2, g: 20, s: 2, c: 13, w: 30 }, isExotic: true },
+        // Grenadier: Grenade-Super
+        { name: "Exotic Grenadier (Tertiary: Health)", stats: { h: 13, m: 2, g: 30, s: 20, c: 2, w: 2 }, isExotic: true },
+        { name: "Exotic Grenadier (Tertiary: Melee)", stats: { h: 2, m: 13, g: 30, s: 20, c: 2, w: 2 }, isExotic: true },
+        { name: "Exotic Grenadier (Tertiary: Weapons)", stats: { h: 2, m: 2, g: 30, s: 20, c: 2, w: 13 }, isExotic: true },
+        { name: "Exotic Grenadier (Tertiary: Class)", stats: { h: 2, m: 2, g: 30, s: 20, c: 13, w: 2 }, isExotic: true },
+        // Paragon: Super-Melee
+        { name: "Exotic Paragon (Tertiary: Health)", stats: { h: 13, m: 20, g: 2, s: 30, c: 2, w: 2 }, isExotic: true },
+        { name: "Exotic Paragon (Tertiary: Grenade)", stats: { h: 2, m: 20, g: 13, s: 30, c: 2, w: 2 }, isExotic: true },
+        { name: "Exotic Paragon (Tertiary: Weapons)", stats: { h: 2, m: 20, g: 2, s: 30, c: 2, w: 13 }, isExotic: true },
+        { name: "Exotic Paragon (Tertiary: Class)", stats: { h: 2, m: 20, g: 2, s: 30, c: 13, w: 2 }, isExotic: true },
+        // Brawler: Melee-Health
+        { name: "Exotic Brawler (Tertiary: Grenade)", stats: { h: 20, m: 30, g: 13, s: 2, c: 2, w: 2 }, isExotic: true },
+        { name: "Exotic Brawler (Tertiary: Super)", stats: { h: 20, m: 30, g: 2, s: 13, c: 2, w: 2 }, isExotic: true },
+        { name: "Exotic Brawler (Tertiary: Weapons)", stats: { h: 20, m: 30, g: 2, s: 2, c: 2, w: 13 }, isExotic: true },
+        { name: "Exotic Brawler (Tertiary: Class)", stats: { h: 20, m: 30, g: 2, s: 2, c: 13, w: 2 }, isExotic: true }
+    ];
+
     const calculateBtn = document.getElementById('calculateBtn');
     const resultsContainer = document.getElementById('results-container');
     const majorModsInput = document.getElementById('majorMods');
     const minorModsInput = document.getElementById('minorMods');
+    const customArmorToggle = document.getElementById('customArmorToggle');
+    const customArmorSection = document.getElementById('customArmorSection');
+    const exoticArmorToggle = document.getElementById('exoticArmorToggle');
     const MAX_STAT_VALUE = 200;
 
     let allSolutions = [];
     let solutionsPageIndex = 0;
     const solutionsPerPage = 5;
+
+    // Toggle custom armor section visibility
+    customArmorToggle.addEventListener('change', () => {
+        customArmorSection.style.display = customArmorToggle.checked ? 'block' : 'none';
+    });
 
     // Create warning element for mod limits
     function createModWarning() {
@@ -119,6 +162,35 @@
         checkModLimits();
     });
 
+    // Get custom armor piece if enabled
+    function getCustomArmorPiece() {
+        if (!customArmorToggle.checked) return null;
+
+        const name = document.getElementById('customArmorName').value || 'Custom Armor Piece';
+        const stats = {
+            h: parseInt(document.getElementById('customHealth').value) || 0,
+            m: parseInt(document.getElementById('customMelee').value) || 0,
+            g: parseInt(document.getElementById('customGrenade').value) || 0,
+            s: parseInt(document.getElementById('customSuper').value) || 0,
+            c: parseInt(document.getElementById('customClass').value) || 0,
+            w: parseInt(document.getElementById('customWeapons').value) || 0
+        };
+
+        return { name, stats, isCustom: true };
+    }
+
+    // Get available armor pieces based on settings
+    function getAvailableArmorPieces() {
+        let availablePieces = [...armorData];
+
+        // Add exotic pieces if enabled
+        if (exoticArmorToggle.checked) {
+            availablePieces = availablePieces.concat(exoticArmorData);
+        }
+
+        return availablePieces;
+    }
+
     calculateBtn.addEventListener('click', () => {
         // Double-check mod limits before calculating
         const majorValue = parseInt(majorModsInput.value) || 0;
@@ -158,11 +230,13 @@
             tuning: 5
         };
         const useTuningMods = document.getElementById('tuningModsToggle').checked;
+        const customArmorPiece = getCustomArmorPiece();
+        const useExoticArmor = exoticArmorToggle.checked;
 
         resultsContainer.innerHTML = '<h2><span class="loader"></span>Calculating... This may take a moment.</h2>';
 
         setTimeout(() => {
-            allSolutions = findSolutions(targets, priorities, maxStats, availableMods, useTuningMods);
+            allSolutions = findSolutions(targets, priorities, maxStats, availableMods, useTuningMods, customArmorPiece, useExoticArmor);
             solutionsPageIndex = 0;
             displaySolutions();
         }, 50);
@@ -302,9 +376,9 @@
     }
 
     // Pre-filters armor pieces to find the most efficient ones for the given targets.
-    function getOptimalArmorPieces(targets, priorities) {
+    function getOptimalArmorPieces(targets, priorities, availablePieces) {
         const priorityWeight = { high: 3, normal: 2, low: 1 };
-        return armorData.map(piece => {
+        return availablePieces.map(piece => {
             let efficiencyScore = 0;
             for (const stat in piece.stats) {
                 // Reward pieces that have stats we care about
@@ -320,52 +394,107 @@
         }).sort((a, b) => b.efficiencyScore - a.efficiencyScore);
     }
 
-    function findSolutions(targets, priorities, maxStats, availableMods, useTuningMods) {
+    function findSolutions(targets, priorities, maxStats, availableMods, useTuningMods, customArmorPiece, useExoticArmor) {
         const solutions = [];
         const processedCombinations = new Set();
         const maxSolutions = 500;
 
+        // Get available armor pieces
+        const availablePieces = getAvailableArmorPieces();
+
         // Pre-filter to get the most efficient pieces, drastically improving performance.
-        const optimalPieces = getOptimalArmorPieces(targets, priorities).slice(0, 8);
+        let optimalPieces = getOptimalArmorPieces(targets, priorities, availablePieces).slice(0, 10);
 
-        for (const helmet of optimalPieces) {
-            for (const arms of optimalPieces) {
-                for (const chest of optimalPieces) {
-                    for (const legs of optimalPieces) {
-                        for (const classItem of optimalPieces) {
-                            if (solutions.length >= maxSolutions) return solutions;
+        // If we have a custom armor piece, always include it
+        if (customArmorPiece) {
+            // Remove any duplicates and add the custom piece
+            optimalPieces = [customArmorPiece, ...optimalPieces.filter(p => p.name !== customArmorPiece.name)];
+        }
 
-                            const armorCombination = [helmet, arms, chest, legs, classItem];
-                            const combinationKey = armorCombination.map(p => p.name).sort().join(',');
+        // Generate combinations based on whether we have exotic armor constraint
+        const generateCombinations = () => {
+            const combinations = [];
 
-                            if (processedCombinations.has(combinationKey)) continue;
-                            processedCombinations.add(combinationKey);
+            if (useExoticArmor) {
+                // When exotic armor is enabled, ensure at most one exotic piece per combination
+                for (const helmet of optimalPieces) {
+                    for (const arms of optimalPieces) {
+                        for (const chest of optimalPieces) {
+                            for (const legs of optimalPieces) {
+                                for (const classItem of optimalPieces) {
+                                    if (solutions.length >= maxSolutions) return combinations;
 
-                            const baseStats = { h: 0, m: 0, g: 0, s: 0, c: 0, w: 0 };
-                            for (const piece of armorCombination) {
-                                for (const stat in baseStats) {
-                                    baseStats[stat] += piece.stats[stat];
+                                    const armorCombination = [helmet, arms, chest, legs, classItem];
+                                    const exoticCount = armorCombination.filter(p => p.isExotic).length;
+
+                                    // Skip if more than one exotic piece
+                                    if (exoticCount > 1) continue;
+
+                                    // If custom armor is required, ensure it's included
+                                    if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
+
+                                    combinations.push(armorCombination);
                                 }
                             }
+                        }
+                    }
+                }
+            } else {
+                // Normal combination generation
+                for (const helmet of optimalPieces) {
+                    for (const arms of optimalPieces) {
+                        for (const chest of optimalPieces) {
+                            for (const legs of optimalPieces) {
+                                for (const classItem of optimalPieces) {
+                                    if (solutions.length >= maxSolutions) return combinations;
 
-                            const result = applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods);
+                                    const armorCombination = [helmet, arms, chest, legs, classItem];
 
-                            const meetsAllTargets = Object.keys(targets).every(stat => result.finalStats[stat] >= targets[stat]);
-                            const priorityScore = calculatePriorityScore(result.finalStats, targets, priorities, maxStats, meetsAllTargets);
+                                    // If custom armor is required, ensure it's included
+                                    if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
 
-                            solutions.push({
-                                // We're now only storing the unique armor piece names, not their assigned slots
-                                armor: armorCombination.map(p => p.name).sort(),
-                                mods: result.modsUsed,
-                                final: result.finalStats,
-                                meetsAllTargets,
-                                priorityScore,
-                            });
+                                    combinations.push(armorCombination);
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            return combinations;
+        };
+
+        const combinations = generateCombinations();
+
+        for (const armorCombination of combinations) {
+            if (solutions.length >= maxSolutions) break;
+
+            const combinationKey = armorCombination.map(p => p.name).sort().join(',');
+
+            if (processedCombinations.has(combinationKey)) continue;
+            processedCombinations.add(combinationKey);
+
+            const baseStats = { h: 0, m: 0, g: 0, s: 0, c: 0, w: 0 };
+            for (const piece of armorCombination) {
+                for (const stat in baseStats) {
+                    baseStats[stat] += piece.stats[stat];
+                }
+            }
+
+            const result = applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods);
+
+            const meetsAllTargets = Object.keys(targets).every(stat => result.finalStats[stat] >= targets[stat]);
+            const priorityScore = calculatePriorityScore(result.finalStats, targets, priorities, maxStats, meetsAllTargets);
+
+            solutions.push({
+                armor: armorCombination.map(p => ({ name: p.name, isExotic: p.isExotic, isCustom: p.isCustom })).sort((a, b) => a.name.localeCompare(b.name)),
+                mods: result.modsUsed,
+                final: result.finalStats,
+                meetsAllTargets,
+                priorityScore,
+            });
         }
+
         return solutions;
     }
 
@@ -404,7 +533,7 @@
         const uniqueSolutions = [];
         const seenCombinations = new Set();
         for (const solution of allSolutions) {
-            const combinationKey = solution.armor.join(',');
+            const combinationKey = solution.armor.map(p => p.name).join(',');
             if (!seenCombinations.has(combinationKey)) {
                 seenCombinations.add(combinationKey);
                 uniqueSolutions.push(solution);
@@ -443,13 +572,20 @@
             // Count the number of each armor piece needed
             const armorCounts = {};
             solution.armor.forEach(piece => {
-                armorCounts[piece] = (armorCounts[piece] || 0) + 1;
+                const key = `${piece.name}|${piece.isExotic || false}|${piece.isCustom || false}`;
+                if (!armorCounts[key]) {
+                    armorCounts[key] = { count: 0, piece };
+                }
+                armorCounts[key].count++;
             });
 
-            const armorListHtml = Object.keys(armorCounts).map(pieceName => {
-                const count = armorCounts[pieceName];
+            const armorListHtml = Object.values(armorCounts).map(({ count, piece }) => {
                 const countString = count > 1 ? ` x${count}` : '';
-                return `<li><b>${pieceName}</b>${countString}</li>`;
+                let cssClass = '';
+                if (piece.isExotic) cssClass = 'exotic-piece';
+                else if (piece.isCustom) cssClass = 'custom-piece';
+
+                return `<li class="${cssClass}"><b>${piece.name}</b>${countString}</li>`;
             }).join('');
 
             // Consolidate mods

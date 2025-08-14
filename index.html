@@ -13,7 +13,7 @@
             This tool calculates builds using masterworked T5 armor. (left number is min targeted stat, right number is max targeted stat)
             (dm wauby on discord with any bugs or issues you find)
         </p>
-        
+
         <div class="section">
             <h2>Step 1: Set Target Stats & Constraints</h2>
             <div class="priority-grid">
@@ -31,7 +31,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="input-group">
                     <label for="melee-controls">Melee</label>
                     <div class="stat-controls">
@@ -46,7 +46,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="input-group">
                     <label for="grenade-controls">Grenade</label>
                     <div class="stat-controls">
@@ -61,7 +61,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="input-group">
                     <label for="super-controls">Super</label>
                     <div class="stat-controls">
@@ -76,7 +76,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="input-group">
                     <label for="class-controls">Class</label>
                     <div class="stat-controls">
@@ -91,7 +91,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="input-group">
                     <label for="weapons-controls">Weapons</label>
                     <div class="stat-controls">
@@ -108,9 +108,72 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="section">
-            <h2>Step 2: Select Standard Mods</h2>
+            <h2>Step 2: Armor Configuration (Optional)</h2>
+
+            <!-- Custom Armor Piece Toggle -->
+            <div class="toggle-switch">
+                <input type="checkbox" id="customArmorToggle" class="toggle-switch-checkbox">
+                <label class="toggle-switch-label" for="customArmorToggle">
+                    <span class="toggle-switch-inner"></span>
+                    <span class="toggle-switch-switch"></span>
+                </label>
+                <div class="toggle-description">
+                    <strong>Force Custom Armor Piece</strong>
+                    <small>Lock one armor piece with specific stats you define.</small>
+                </div>
+            </div>
+
+            <div id="customArmorSection" class="custom-armor-section" style="display: none;">
+                <div class="custom-armor-grid">
+                    <div class="input-group">
+                        <label for="customArmorName">Armor Piece Name</label>
+                        <input type="text" id="customArmorName" placeholder="e.g., My Custom Helmet">
+                    </div>
+                    <div class="input-group">
+                        <label for="customHealth">Health</label>
+                        <input type="number" id="customHealth" value="0" min="0" max="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="customMelee">Melee</label>
+                        <input type="number" id="customMelee" value="0" min="0" max="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="customGrenade">Grenade</label>
+                        <input type="number" id="customGrenade" value="0" min="0" max="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="customSuper">Super</label>
+                        <input type="number" id="customSuper" value="0" min="0" max="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="customClass">Class</label>
+                        <input type="number" id="customClass" value="0" min="0" max="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="customWeapons">Weapons</label>
+                        <input type="number" id="customWeapons" value="0" min="0" max="50">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exotic Armor Toggle -->
+            <div class="toggle-switch">
+                <input type="checkbox" id="exoticArmorToggle" class="toggle-switch-checkbox">
+                <label class="toggle-switch-label" for="exoticArmorToggle">
+                    <span class="toggle-switch-inner"></span>
+                    <span class="toggle-switch-switch"></span>
+                </label>
+                <div class="toggle-description">
+                    <strong>Include Exotic Armor Option</strong>
+                    <small>Allow one armor piece to be an exotic with T2 stats (30 primary, 20 secondary, 13 tertiary).</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Step 3: Select Standard Mods</h2>
             <p>You have a max of 5 mods.</p>
             <div class="input-grid mod-grid">
                 <div class="input-group">
@@ -123,9 +186,9 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="section">
-            <h2>Step 3: Enable Advanced Mods (Optional)</h2>
+            <h2>Step 4: Enable Advanced Mods (Optional)</h2>
             <div class="toggle-switch">
                 <input type="checkbox" id="tuningModsToggle" class="toggle-switch-checkbox">
                 <label class="toggle-switch-label" for="tuningModsToggle">
@@ -138,13 +201,13 @@
                 </div>
             </div>
         </div>
-        
+
         <button id="calculateBtn">Calculate Builds</button>
         <div id="results-container">
             <!-- Results will be displayed here -->
         </div>
     </div>
-    
+
     <script src="script.js"></script>
 </body>
 </html>
