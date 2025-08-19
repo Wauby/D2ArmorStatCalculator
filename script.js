@@ -468,14 +468,8 @@
         // Get available armor pieces
         const availablePieces = getAvailableArmorPieces();
 
-        // Pre-filter to get the most efficient pieces, drastically improving performance.
-        let optimalPieces = getOptimalArmorPieces(targets, priorities, availablePieces).slice(0, 15); // Increased from 10 to 15 for more variety
-
-        // If we have a custom armor piece, always include it
-        if (customArmorPiece) {
-            // Remove any duplicates and add the custom piece
-            optimalPieces = [customArmorPiece, ...optimalPieces.filter(p => p.name !== customArmorPiece.name)];
-        }
+        // Pre-filter to get the most efficient pieces
+        let optimalPieces = getOptimalArmorPieces(targets, priorities, availablePieces).slice(0, 15);
 
         // Ensure we have enough regular pieces when forcing exotic
         if (useExoticArmor) {
@@ -503,7 +497,6 @@
 
             if (useExoticArmor) {
                 // Force exactly one exotic piece per combination
-                // Split pieces into regular and exotic
                 const regularPieces = optimalPieces.filter(p => !p.isExotic);
                 const exoticPieces = optimalPieces.filter(p => p.isExotic);
 
@@ -534,8 +527,11 @@
                                             const exoticCount = armorCombination.filter(p => p.isExotic).length;
                                             if (exoticCount !== 1) continue;
 
-                                            // If custom armor is required, ensure it's included
-                                            if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
+                                            // If custom armor is required, ensure it's included EXACTLY ONCE
+                                            if (customArmorPiece) {
+                                                const customCount = armorCombination.filter(p => p.isCustom).length;
+                                                if (customCount !== 1) continue;
+                                            }
 
                                             combinations.push(armorCombination);
                                         }
@@ -545,8 +541,51 @@
                         }
                     }
                 }
+            } else if (customArmorPiece) {
+                // Custom armor enabled but no exotic - ensure exactly 1 custom piece
+                const regularPieces = optimalPieces.filter(p => !p.isExotic && !p.isCustom);
+
+                // Add the custom piece to the regular pieces for selection
+                const allNonExoticPieces = [customArmorPiece, ...regularPieces];
+
+                const positions = [0, 1, 2, 3, 4]; // helmet, arms, chest, legs, classItem
+
+                for (const customPosition of positions) {
+                    // Create all combinations with the custom piece in the specified position
+                    const piecesToUse = [
+                        customPosition === 0 ? [customArmorPiece] : regularPieces, // helmet
+                        customPosition === 1 ? [customArmorPiece] : regularPieces, // arms
+                        customPosition === 2 ? [customArmorPiece] : regularPieces, // chest
+                        customPosition === 3 ? [customArmorPiece] : regularPieces, // legs
+                        customPosition === 4 ? [customArmorPiece] : regularPieces  // classItem
+                    ];
+
+                    for (const helmet of piecesToUse[0]) {
+                        for (const arms of piecesToUse[1]) {
+                            for (const chest of piecesToUse[2]) {
+                                for (const legs of piecesToUse[3]) {
+                                    for (const classItem of piecesToUse[4]) {
+                                        if (combinations.length >= maxSolutions) return combinations;
+
+                                        const armorCombination = [helmet, arms, chest, legs, classItem];
+
+                                        // Verify exactly 1 custom piece
+                                        const customCount = armorCombination.filter(p => p.isCustom).length;
+                                        if (customCount !== 1) continue;
+
+                                        // Verify no exotic pieces
+                                        const exoticCount = armorCombination.filter(p => p.isExotic).length;
+                                        if (exoticCount > 0) continue;
+
+                                        combinations.push(armorCombination);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             } else {
-                // Regular combinations (no exotics allowed)
+                // Regular combinations (no exotics or custom armor required)
                 const nonExoticPieces = optimalPieces.filter(p => !p.isExotic);
 
                 for (const helmet of nonExoticPieces) {
@@ -558,8 +597,13 @@
 
                                     const armorCombination = [helmet, arms, chest, legs, classItem];
 
-                                    // If custom armor is required, ensure it's included
-                                    if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
+                                    // Verify no exotic pieces
+                                    const exoticCount = armorCombination.filter(p => p.isExotic).length;
+                                    if (exoticCount > 0) continue;
+
+                                    // Verify no custom pieces (since custom armor is not enabled)
+                                    const customCount = armorCombination.filter(p => p.isCustom).length;
+                                    if (customCount > 0) continue;
 
                                     combinations.push(armorCombination);
                                 }
