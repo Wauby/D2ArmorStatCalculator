@@ -469,7 +469,7 @@
         const availablePieces = getAvailableArmorPieces();
 
         // Pre-filter to get the most efficient pieces, drastically improving performance.
-        let optimalPieces = getOptimalArmorPieces(targets, priorities, availablePieces).slice(0, 10);
+        let optimalPieces = getOptimalArmorPieces(targets, priorities, availablePieces).slice(0, 15); // Increased from 10 to 15 for more variety
 
         // If we have a custom armor piece, always include it
         if (customArmorPiece) {
@@ -477,32 +477,60 @@
             optimalPieces = [customArmorPiece, ...optimalPieces.filter(p => p.name !== customArmorPiece.name)];
         }
 
+        // Ensure we have enough regular pieces when forcing exotic
+        if (useExoticArmor) {
+            const regularPieces = optimalPieces.filter(p => !p.isExotic);
+            const exoticPieces = optimalPieces.filter(p => p.isExotic);
+
+            // If we don't have enough regular pieces, add more
+            if (regularPieces.length < 5) {
+                const additionalRegular = availablePieces
+                    .filter(p => !p.isExotic && !optimalPieces.some(op => op.name === p.name))
+                    .slice(0, 10 - regularPieces.length);
+                optimalPieces = [...optimalPieces, ...additionalRegular];
+            }
+
+            // Ensure we have exotic pieces
+            if (exoticPieces.length === 0) {
+                console.error('No exotic pieces available but exotic armor is forced');
+                return []; // Return empty if no exotic pieces available
+            }
+        }
+
         // Generate combinations based on current settings
         const generateCombinations = () => {
             const combinations = [];
 
-            // Split pieces into regular and exotic
-            const regularPieces = optimalPieces.filter(p => !p.isExotic);
-            const exoticPieces = optimalPieces.filter(p => p.isExotic);
-
             if (useExoticArmor) {
                 // Force exactly one exotic piece per combination
+                // Split pieces into regular and exotic
+                const regularPieces = optimalPieces.filter(p => !p.isExotic);
+                const exoticPieces = optimalPieces.filter(p => p.isExotic);
+
+                // For each exotic piece, try it in each position
                 for (const exoticPiece of exoticPieces) {
-                    // For each exotic piece, try it in each position
                     const positions = [0, 1, 2, 3, 4]; // helmet, arms, chest, legs, classItem
 
                     for (const exoticPosition of positions) {
                         // Create all combinations with this exotic in the specified position
-                        for (const helmet of (exoticPosition === 0 ? [exoticPiece] : regularPieces)) {
-                            for (const arms of (exoticPosition === 1 ? [exoticPiece] : regularPieces)) {
-                                for (const chest of (exoticPosition === 2 ? [exoticPiece] : regularPieces)) {
-                                    for (const legs of (exoticPosition === 3 ? [exoticPiece] : regularPieces)) {
-                                        for (const classItem of (exoticPosition === 4 ? [exoticPiece] : regularPieces)) {
-                                            if (solutions.length >= maxSolutions) return combinations;
+                        const piecesToUse = [
+                            exoticPosition === 0 ? [exoticPiece] : regularPieces, // helmet
+                            exoticPosition === 1 ? [exoticPiece] : regularPieces, // arms
+                            exoticPosition === 2 ? [exoticPiece] : regularPieces, // chest
+                            exoticPosition === 3 ? [exoticPiece] : regularPieces, // legs
+                            exoticPosition === 4 ? [exoticPiece] : regularPieces  // classItem
+                        ];
+
+                        for (const helmet of piecesToUse[0]) {
+                            for (const arms of piecesToUse[1]) {
+                                for (const chest of piecesToUse[2]) {
+                                    for (const legs of piecesToUse[3]) {
+                                        for (const classItem of piecesToUse[4]) {
+                                            if (combinations.length >= maxSolutions) return combinations;
 
                                             const armorCombination = [helmet, arms, chest, legs, classItem];
 
-                                            // Double check - should have exactly 1 exotic
+                                            // Verify exactly 1 exotic
                                             const exoticCount = armorCombination.filter(p => p.isExotic).length;
                                             if (exoticCount !== 1) continue;
 
@@ -518,19 +546,17 @@
                     }
                 }
             } else {
-                // Regular combinations (no exotics)
-                for (const helmet of regularPieces) {
-                    for (const arms of regularPieces) {
-                        for (const chest of regularPieces) {
-                            for (const legs of regularPieces) {
-                                for (const classItem of regularPieces) {
-                                    if (solutions.length >= maxSolutions) return combinations;
+                // Regular combinations (no exotics allowed)
+                const nonExoticPieces = optimalPieces.filter(p => !p.isExotic);
+
+                for (const helmet of nonExoticPieces) {
+                    for (const arms of nonExoticPieces) {
+                        for (const chest of nonExoticPieces) {
+                            for (const legs of nonExoticPieces) {
+                                for (const classItem of nonExoticPieces) {
+                                    if (combinations.length >= maxSolutions) return combinations;
 
                                     const armorCombination = [helmet, arms, chest, legs, classItem];
-
-                                    // Should have 0 exotics
-                                    const exoticCount = armorCombination.filter(p => p.isExotic).length;
-                                    if (exoticCount > 0) continue;
 
                                     // If custom armor is required, ensure it's included
                                     if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
