@@ -361,7 +361,8 @@
 
         // --- Phase 1: Strategic Tuning Mod Application (if enabled) ---
         if (useTuningMods) {
-            for (let i = 0; i < remainingTuning; i++) {
+            const maxTuningMods = availableMods.tuning; // Use the passed tuning mod limit
+            for (let i = 0; i < maxTuningMods; i++) {
                 if (remainingTuning <= 0) break;
 
                 // Find the best stat to increase (highest priority deficit)
@@ -480,24 +481,62 @@
         const generateCombinations = () => {
             const combinations = [];
 
-            for (const helmet of optimalPieces) {
-                for (const arms of optimalPieces) {
-                    for (const chest of optimalPieces) {
-                        for (const legs of optimalPieces) {
-                            for (const classItem of optimalPieces) {
-                                if (solutions.length >= maxSolutions) return combinations;
+            // Split pieces into regular and exotic
+            const regularPieces = optimalPieces.filter(p => !p.isExotic);
+            const exoticPieces = optimalPieces.filter(p => p.isExotic);
 
-                                const armorCombination = [helmet, arms, chest, legs, classItem];
+            if (useExoticArmor) {
+                // Force exactly one exotic piece per combination
+                for (const exoticPiece of exoticPieces) {
+                    // For each exotic piece, try it in each position
+                    const positions = [0, 1, 2, 3, 4]; // helmet, arms, chest, legs, classItem
 
-                                // Check exotic constraint - exactly one exotic if exotic toggle is on
-                                const exoticCount = armorCombination.filter(p => p.isExotic).length;
-                                if (useExoticArmor && exoticCount !== 1) continue; // Must have exactly 1 exotic
-                                if (!useExoticArmor && exoticCount > 0) continue; // Must have 0 exotics
+                    for (const exoticPosition of positions) {
+                        // Create all combinations with this exotic in the specified position
+                        for (const helmet of (exoticPosition === 0 ? [exoticPiece] : regularPieces)) {
+                            for (const arms of (exoticPosition === 1 ? [exoticPiece] : regularPieces)) {
+                                for (const chest of (exoticPosition === 2 ? [exoticPiece] : regularPieces)) {
+                                    for (const legs of (exoticPosition === 3 ? [exoticPiece] : regularPieces)) {
+                                        for (const classItem of (exoticPosition === 4 ? [exoticPiece] : regularPieces)) {
+                                            if (solutions.length >= maxSolutions) return combinations;
 
-                                // If custom armor is required, ensure it's included
-                                if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
+                                            const armorCombination = [helmet, arms, chest, legs, classItem];
 
-                                combinations.push(armorCombination);
+                                            // Double check - should have exactly 1 exotic
+                                            const exoticCount = armorCombination.filter(p => p.isExotic).length;
+                                            if (exoticCount !== 1) continue;
+
+                                            // If custom armor is required, ensure it's included
+                                            if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
+
+                                            combinations.push(armorCombination);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Regular combinations (no exotics)
+                for (const helmet of regularPieces) {
+                    for (const arms of regularPieces) {
+                        for (const chest of regularPieces) {
+                            for (const legs of regularPieces) {
+                                for (const classItem of regularPieces) {
+                                    if (solutions.length >= maxSolutions) return combinations;
+
+                                    const armorCombination = [helmet, arms, chest, legs, classItem];
+
+                                    // Should have 0 exotics
+                                    const exoticCount = armorCombination.filter(p => p.isExotic).length;
+                                    if (exoticCount > 0) continue;
+
+                                    // If custom armor is required, ensure it's included
+                                    if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
+
+                                    combinations.push(armorCombination);
+                                }
                             }
                         }
                     }
