@@ -35,38 +35,38 @@
     ];
 
     // T2 Exotic Armor Stats: Primary = 30, Secondary = 20, Tertiary = 13
-    // Masterworked adds +2 to the 3 stats that don't have primary/secondary/tertiary
+    // Masterworked adds +5 to the 3 stats that don't have primary/secondary/tertiary (updated to 5)
     const exoticArmorData = [
         // Bulwark: Health-Class
-        { name: "Exotic Bulwark (Tertiary: Melee)", stats: { h: 30, m: 13, g: 2, s: 2, c: 20, w: 2 }, isExotic: true },
-        { name: "Exotic Bulwark (Tertiary: Grenade)", stats: { h: 30, m: 2, g: 13, s: 2, c: 20, w: 2 }, isExotic: true },
-        { name: "Exotic Bulwark (Tertiary: Super)", stats: { h: 30, m: 2, g: 2, s: 13, c: 20, w: 2 }, isExotic: true },
-        { name: "Exotic Bulwark (Tertiary: Weapons)", stats: { h: 30, m: 2, g: 2, s: 2, c: 20, w: 13 }, isExotic: true },
+        { name: "Exotic Bulwark (Tertiary: Melee)", stats: { h: 30, m: 13, g: 5, s: 5, c: 20, w: 5 }, isExotic: true },
+        { name: "Exotic Bulwark (Tertiary: Grenade)", stats: { h: 30, m: 5, g: 13, s: 5, c: 20, w: 5 }, isExotic: true },
+        { name: "Exotic Bulwark (Tertiary: Super)", stats: { h: 30, m: 5, g: 5, s: 13, c: 20, w: 5 }, isExotic: true },
+        { name: "Exotic Bulwark (Tertiary: Weapons)", stats: { h: 30, m: 5, g: 5, s: 5, c: 20, w: 13 }, isExotic: true },
         // Specialist: Class-Weapons
-        { name: "Exotic Specialist (Tertiary: Health)", stats: { h: 13, m: 2, g: 2, s: 2, c: 30, w: 20 }, isExotic: true },
-        { name: "Exotic Specialist (Tertiary: Melee)", stats: { h: 2, m: 13, g: 2, s: 2, c: 30, w: 20 }, isExotic: true },
-        { name: "Exotic Specialist (Tertiary: Grenade)", stats: { h: 2, m: 2, g: 13, s: 2, c: 30, w: 20 }, isExotic: true },
-        { name: "Exotic Specialist (Tertiary: Super)", stats: { h: 2, m: 2, g: 2, s: 13, c: 30, w: 20 }, isExotic: true },
+        { name: "Exotic Specialist (Tertiary: Health)", stats: { h: 13, m: 5, g: 5, s: 5, c: 30, w: 20 }, isExotic: true },
+        { name: "Exotic Specialist (Tertiary: Melee)", stats: { h: 5, m: 13, g: 5, s: 5, c: 30, w: 20 }, isExotic: true },
+        { name: "Exotic Specialist (Tertiary: Grenade)", stats: { h: 5, m: 5, g: 13, s: 5, c: 30, w: 20 }, isExotic: true },
+        { name: "Exotic Specialist (Tertiary: Super)", stats: { h: 5, m: 5, g: 5, s: 13, c: 30, w: 20 }, isExotic: true },
         // Gunner: Weapons-Grenade
-        { name: "Exotic Gunner (Tertiary: Health)", stats: { h: 13, m: 2, g: 20, s: 2, c: 2, w: 30 }, isExotic: true },
-        { name: "Exotic Gunner (Tertiary: Melee)", stats: { h: 2, m: 13, g: 20, s: 2, c: 2, w: 30 }, isExotic: true },
-        { name: "Exotic Gunner (Tertiary: Super)", stats: { h: 2, m: 2, g: 20, s: 13, c: 2, w: 30 }, isExotic: true },
-        { name: "Exotic Gunner (Tertiary: Class)", stats: { h: 2, m: 2, g: 20, s: 2, c: 13, w: 30 }, isExotic: true },
+        { name: "Exotic Gunner (Tertiary: Health)", stats: { h: 13, m: 5, g: 20, s: 5, c: 5, w: 30 }, isExotic: true },
+        { name: "Exotic Gunner (Tertiary: Melee)", stats: { h: 5, m: 13, g: 20, s: 5, c: 5, w: 30 }, isExotic: true },
+        { name: "Exotic Gunner (Tertiary: Super)", stats: { h: 5, m: 5, g: 20, s: 13, c: 5, w: 30 }, isExotic: true },
+        { name: "Exotic Gunner (Tertiary: Class)", stats: { h: 5, m: 5, g: 20, s: 5, c: 13, w: 30 }, isExotic: true },
         // Grenadier: Grenade-Super
-        { name: "Exotic Grenadier (Tertiary: Health)", stats: { h: 13, m: 2, g: 30, s: 20, c: 2, w: 2 }, isExotic: true },
-        { name: "Exotic Grenadier (Tertiary: Melee)", stats: { h: 2, m: 13, g: 30, s: 20, c: 2, w: 2 }, isExotic: true },
-        { name: "Exotic Grenadier (Tertiary: Weapons)", stats: { h: 2, m: 2, g: 30, s: 20, c: 2, w: 13 }, isExotic: true },
-        { name: "Exotic Grenadier (Tertiary: Class)", stats: { h: 2, m: 2, g: 30, s: 20, c: 13, w: 2 }, isExotic: true },
+        { name: "Exotic Grenadier (Tertiary: Health)", stats: { h: 13, m: 5, g: 30, s: 20, c: 5, w: 5 }, isExotic: true },
+        { name: "Exotic Grenadier (Tertiary: Melee)", stats: { h: 5, m: 13, g: 30, s: 20, c: 5, w: 5 }, isExotic: true },
+        { name: "Exotic Grenadier (Tertiary: Weapons)", stats: { h: 5, m: 5, g: 30, s: 20, c: 5, w: 13 }, isExotic: true },
+        { name: "Exotic Grenadier (Tertiary: Class)", stats: { h: 5, m: 5, g: 30, s: 20, c: 13, w: 5 }, isExotic: true },
         // Paragon: Super-Melee
-        { name: "Exotic Paragon (Tertiary: Health)", stats: { h: 13, m: 20, g: 2, s: 30, c: 2, w: 2 }, isExotic: true },
-        { name: "Exotic Paragon (Tertiary: Grenade)", stats: { h: 2, m: 20, g: 13, s: 30, c: 2, w: 2 }, isExotic: true },
-        { name: "Exotic Paragon (Tertiary: Weapons)", stats: { h: 2, m: 20, g: 2, s: 30, c: 2, w: 13 }, isExotic: true },
-        { name: "Exotic Paragon (Tertiary: Class)", stats: { h: 2, m: 20, g: 2, s: 30, c: 13, w: 2 }, isExotic: true },
+        { name: "Exotic Paragon (Tertiary: Health)", stats: { h: 13, m: 20, g: 5, s: 30, c: 5, w: 5 }, isExotic: true },
+        { name: "Exotic Paragon (Tertiary: Grenade)", stats: { h: 5, m: 20, g: 13, s: 30, c: 5, w: 5 }, isExotic: true },
+        { name: "Exotic Paragon (Tertiary: Weapons)", stats: { h: 5, m: 20, g: 5, s: 30, c: 5, w: 13 }, isExotic: true },
+        { name: "Exotic Paragon (Tertiary: Class)", stats: { h: 5, m: 20, g: 5, s: 30, c: 13, w: 5 }, isExotic: true },
         // Brawler: Melee-Health
-        { name: "Exotic Brawler (Tertiary: Grenade)", stats: { h: 20, m: 30, g: 13, s: 2, c: 2, w: 2 }, isExotic: true },
-        { name: "Exotic Brawler (Tertiary: Super)", stats: { h: 20, m: 30, g: 2, s: 13, c: 2, w: 2 }, isExotic: true },
-        { name: "Exotic Brawler (Tertiary: Weapons)", stats: { h: 20, m: 30, g: 2, s: 2, c: 2, w: 13 }, isExotic: true },
-        { name: "Exotic Brawler (Tertiary: Class)", stats: { h: 20, m: 30, g: 2, s: 2, c: 13, w: 2 }, isExotic: true }
+        { name: "Exotic Brawler (Tertiary: Grenade)", stats: { h: 20, m: 30, g: 13, s: 5, c: 5, w: 5 }, isExotic: true },
+        { name: "Exotic Brawler (Tertiary: Super)", stats: { h: 20, m: 30, g: 5, s: 13, c: 5, w: 5 }, isExotic: true },
+        { name: "Exotic Brawler (Tertiary: Weapons)", stats: { h: 20, m: 30, g: 5, s: 5, c: 5, w: 13 }, isExotic: true },
+        { name: "Exotic Brawler (Tertiary: Class)", stats: { h: 20, m: 30, g: 5, s: 5, c: 13, w: 5 }, isExotic: true }
     ];
 
     const calculateBtn = document.getElementById('calculateBtn');
@@ -78,21 +78,46 @@
     const exoticArmorToggle = document.getElementById('exoticArmorToggle');
     const customFragmentToggle = document.getElementById('customFragmentToggle');
     const customFragmentSection = document.getElementById('customFragmentSection');
+    const tuningModsToggle = document.getElementById('tuningModsToggle');
     const MAX_STAT_VALUE = 200;
 
     let allSolutions = [];
     let solutionsPageIndex = 0;
     const solutionsPerPage = 5;
 
-    // Toggle custom armor section visibility
+    // Toggle mutual exclusivity between custom armor and exotic armor
     customArmorToggle.addEventListener('change', () => {
+        if (customArmorToggle.checked) {
+            exoticArmorToggle.checked = false;
+        }
         customArmorSection.style.display = customArmorToggle.checked ? 'block' : 'none';
+        updateTuningModDescription();
+    });
+
+    exoticArmorToggle.addEventListener('change', () => {
+        if (exoticArmorToggle.checked) {
+            customArmorToggle.checked = false;
+            customArmorSection.style.display = 'none';
+        }
+        updateTuningModDescription();
     });
 
     // Toggle custom fragment section visibility
     customFragmentToggle.addEventListener('change', () => {
         customFragmentSection.style.display = customFragmentToggle.checked ? 'block' : 'none';
     });
+
+    // Update tuning mod description based on current settings
+    function updateTuningModDescription() {
+        const description = document.getElementById('tuningModDescription');
+        const isReduced = customArmorToggle.checked || exoticArmorToggle.checked;
+        const maxMods = isReduced ? 4 : 5;
+
+        description.textContent = `Allows using up to ${maxMods} mods that shift stats (+5 to one, -5 to another) or add minor boosts (+1 to three non-primary stats).`;
+        if (isReduced) {
+            description.textContent += ' Reduced to 4 when using custom/exotic armor.';
+        }
+    }
 
     // Create warning element for mod limits
     function createModWarning() {
@@ -250,7 +275,7 @@
         const availableMods = {
             major: parseInt(majorModsInput.value) || 0,
             minor: parseInt(minorModsInput.value) || 0,
-            tuning: 5
+            tuning: customArmorToggle.checked || exoticArmorToggle.checked ? 4 : 5
         };
         const useTuningMods = document.getElementById('tuningModsToggle').checked;
         const customArmorPiece = getCustomArmorPiece();
@@ -336,7 +361,7 @@
 
         // --- Phase 1: Strategic Tuning Mod Application (if enabled) ---
         if (useTuningMods) {
-            for (let i = 0; i < 5; i++) { // Max 5 tuning mods
+            for (let i = 0; i < remainingTuning; i++) {
                 if (remainingTuning <= 0) break;
 
                 // Find the best stat to increase (highest priority deficit)
@@ -451,50 +476,28 @@
             optimalPieces = [customArmorPiece, ...optimalPieces.filter(p => p.name !== customArmorPiece.name)];
         }
 
-        // Generate combinations based on whether we have exotic armor constraint
+        // Generate combinations based on current settings
         const generateCombinations = () => {
             const combinations = [];
 
-            if (useExoticArmor) {
-                // When exotic armor is enabled, ensure at most one exotic piece per combination
-                for (const helmet of optimalPieces) {
-                    for (const arms of optimalPieces) {
-                        for (const chest of optimalPieces) {
-                            for (const legs of optimalPieces) {
-                                for (const classItem of optimalPieces) {
-                                    if (solutions.length >= maxSolutions) return combinations;
+            for (const helmet of optimalPieces) {
+                for (const arms of optimalPieces) {
+                    for (const chest of optimalPieces) {
+                        for (const legs of optimalPieces) {
+                            for (const classItem of optimalPieces) {
+                                if (solutions.length >= maxSolutions) return combinations;
 
-                                    const armorCombination = [helmet, arms, chest, legs, classItem];
-                                    const exoticCount = armorCombination.filter(p => p.isExotic).length;
+                                const armorCombination = [helmet, arms, chest, legs, classItem];
 
-                                    // Skip if more than one exotic piece
-                                    if (exoticCount > 1) continue;
+                                // Check exotic constraint - exactly one exotic if exotic toggle is on
+                                const exoticCount = armorCombination.filter(p => p.isExotic).length;
+                                if (useExoticArmor && exoticCount !== 1) continue; // Must have exactly 1 exotic
+                                if (!useExoticArmor && exoticCount > 0) continue; // Must have 0 exotics
 
-                                    // If custom armor is required, ensure it's included
-                                    if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
+                                // If custom armor is required, ensure it's included
+                                if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
 
-                                    combinations.push(armorCombination);
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Normal combination generation
-                for (const helmet of optimalPieces) {
-                    for (const arms of optimalPieces) {
-                        for (const chest of optimalPieces) {
-                            for (const legs of optimalPieces) {
-                                for (const classItem of optimalPieces) {
-                                    if (solutions.length >= maxSolutions) return combinations;
-
-                                    const armorCombination = [helmet, arms, chest, legs, classItem];
-
-                                    // If custom armor is required, ensure it's included
-                                    if (customArmorPiece && !armorCombination.some(p => p.isCustom)) continue;
-
-                                    combinations.push(armorCombination);
-                                }
+                                combinations.push(armorCombination);
                             }
                         }
                     }
@@ -696,6 +699,7 @@
         }
     }
 
-    // Initialize mod limit checking on page load
+    // Initialize mod limit checking and tuning description on page load
     checkModLimits();
+    updateTuningModDescription();
 });
