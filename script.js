@@ -304,9 +304,18 @@
         return statNames[key] || key;
     }
 
-    // Calculates a score for a build based on priorities, targets, and max stat preferences.
+    // IMPROVED priority scoring system - focuses on getting as close as possible to targets
     function calculatePriorityScore(finalStats, targets, priorities, maxStats, meetsAllTargets) {
-        let score = meetsAllTargets ? 1000 : 0; // Huge bonus for meeting all targets.
+        let score = 0;
+
+        // Huge bonus for meeting all targets exactly or closely
+        if (meetsAllTargets) {
+            score += 100000;
+        }
+
+        // Calculate how close we are to each target
+        let totalDistance = 0;
+        let weightedDistance = 0;
 
         for (const stat of Object.keys(finalStats)) {
             const value = finalStats[stat];
@@ -316,224 +325,466 @@
             const excess = Math.max(0, value - target);
             const overMax = Math.max(0, value - maxStat);
 
-            const priorityMultiplier = { high: 10, normal: 5, low: 2 };
+            const priorityMultiplier = { high: 1000, normal: 500, low: 100 };
 
-            // Penalty for not meeting target
-            score -= deficit * priorityMultiplier[priorities[stat]];
-
-            // Reward/penalty for excess based on priority
-            if (priorities[stat] === 'high') score += excess * 1.5;
-            else if (priorities[stat] === 'normal') score += excess * 0.5;
-            else score -= excess * 2; // Penalize wasted stats on low-priority.
-
-            // Additional penalty for exceeding max stat preferences (but don't make it impossible)
-            if (overMax > 0) {
-                score -= overMax * 3; // Moderate penalty for exceeding max preferences
+            // Heavy penalty for not meeting targets (deficit)
+            if (deficit > 0) {
+                const deficitPenalty = deficit * deficit * priorityMultiplier[priorities[stat]] * 3;
+                score -= deficitPenalty;
+                weightedDistance += deficit * priorityMultiplier[priorities[stat]];
             }
+
+            // Moderate penalty for exceeding targets (waste)
+            if (excess > 0) {
+                let excessPenalty;
+                if (priorities[stat] === 'high') {
+                    // Small penalty for high priority - some excess is okay
+                    excessPenalty = Math.pow(excess * 0.3, 1.5) * 20;
+                } else if (priorities[stat] === 'normal') {
+                    // Medium penalty for normal priority
+                    excessPenalty = Math.pow(excess * 0.5, 1.5) * 30;
+                } else {
+                    // Heavy penalty for low priority - waste is bad
+                    excessPenalty = excess * excess * 50;
+                }
+                score -= excessPenalty;
+                weightedDistance += excess * priorityMultiplier[priorities[stat]] * 0.2;
+            }
+
+            // Heavy penalty for exceeding max preferences
+            if (overMax > 0 && maxStat < MAX_STAT_VALUE) {
+                score -= overMax * overMax * 100;
+            }
+
+            totalDistance += Math.abs(value - target);
         }
+
+        // Bonus for being close to targets overall
+        const closenessBonus = Math.max(0, 1000 - totalDistance * 10);
+        score += closenessBonus;
+
+        // Bonus for efficient stat distribution (hitting multiple targets)
+        const targetsHit = Object.keys(targets).filter(stat =>
+            targets[stat] > 0 && finalStats[stat] >= targets[stat]
+        ).length;
+        score += targetsHit * 5000;
+
         return Math.round(score);
     }
 
-    // Applies tuning, major, and minor mods to a base stat profile to reach targets.
-    function applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods, customFragmentBonuses) {
+    // IMPROVED tuning mod generation - smarter about target proximity
+    function generateBestTuningMods(baseStats, targets, maxTuningMods, armorPiece) {
+        const statKeys = ['h', 'm', 'g', 's', 'c', 'w'];
+        const tuningModOptions = [];
+
+        // Always include no tuning mods as an option
+        tuningModOptions.push([]);
+
+        // Calculate deficits and excesses for smarter mod selection
+        const deficits = {};
+        const excesses = {};
+        for (const stat of statKeys) {
+            deficits[stat] = Math.max(0, targets[stat] - baseStats[stat]);
+            excesses[stat] = Math.max(0, baseStats[stat] - targets[stat]);
+        }
+
+        // Helper function to get primary/secondary stats for +1/+1/+1 mods
+        function getArmorType(stats) {
+            const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+            return {
+                primary: sortedStats[0][0],
+                secondary: sortedStats[1][0]
+            };
+        }
+
+        // Generate +1/+1/+1 boost combinations (only if we have deficits in those stats)
+        if (armorPiece && armorPiece.stats) {
+            const { primary, secondary } = getArmorType(armorPiece.stats);
+            const nonPrimaryStats = statKeys.filter(stat => stat !== primary && stat !== secondary);
+
+            // Only generate boosts for stats we actually need
+            const neededNonPrimaryStats = nonPrimaryStats.filter(stat => deficits[stat] > 0);
+
+            if (neededNonPrimaryStats.length >= 3) {
+                // Generate combinations of 3 stats from needed non-primary stats
+                for (let i = 0; i < neededNonPrimaryStats.length - 2; i++) {
+                    for (let j = i + 1; j < neededNonPrimaryStats.length - 1; j++) {
+                        for (let k = j + 1; k < neededNonPrimaryStats.length; k++) {
+                            const boostStats = [neededNonPrimaryStats[i], neededNonPrimaryStats[j], neededNonPrimaryStats[k]];
+
+                            // Single +1/+1/+1 mod
+                            tuningModOptions.push([{ type: 'boost', stats: boostStats }]);
+
+                            // Multiple +1/+1/+1 mods (only if we need lots of small boosts)
+                            const totalNeeded = boostStats.reduce((sum, stat) => sum + deficits[stat], 0);
+                            if (totalNeeded > 3) {
+                                for (let numMods = 2; numMods <= Math.min(maxTuningMods, Math.ceil(totalNeeded / 3)); numMods++) {
+                                    const multiBoostMods = [];
+                                    for (let m = 0; m < numMods; m++) {
+                                        multiBoostMods.push({ type: 'boost', stats: boostStats });
+                                    }
+                                    tuningModOptions.push(multiBoostMods);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // IMPROVED +5/-5 shift combinations - prioritize productive shifts
+        const productiveShifts = [];
+
+        for (const statFrom of statKeys) {
+            for (const statTo of statKeys) {
+                if (statFrom !== statTo) {
+                    const hasExcess = excesses[statFrom] > 0;
+                    const needsMore = deficits[statTo] > 0;
+                    const canAfford = baseStats[statFrom] >= 5;
+
+                    // Calculate shift value - how beneficial this shift would be
+                    let shiftValue = 0;
+                    if (hasExcess && needsMore && canAfford) {
+                        // Perfect shift - reduces excess and fills deficit
+                        shiftValue = 100;
+                        shiftValue += Math.min(excesses[statFrom], deficits[statTo]) * 10;
+                    } else if (needsMore && canAfford && excesses[statFrom] >= 2) {
+                        // Good shift - helps target even if source isn't excess
+                        shiftValue = 50;
+                        shiftValue += deficits[statTo] * 5;
+                    } else if (needsMore && canAfford) {
+                        // Acceptable shift - helps target
+                        shiftValue = 25;
+                        shiftValue += deficits[statTo] * 2;
+                    }
+
+                    if (shiftValue > 0) {
+                        productiveShifts.push({ from: statFrom, to: statTo, value: shiftValue });
+                    }
+                }
+            }
+        }
+
+        // Sort shifts by value and generate mod combinations
+        productiveShifts.sort((a, b) => b.value - a.value);
+
+        // Add best shift combinations
+        for (let i = 0; i < Math.min(productiveShifts.length, 10); i++) {
+            const shift = productiveShifts[i];
+
+            // Single shift
+            tuningModOptions.push([{ type: 'shift', from: shift.from, to: shift.to }]);
+
+            // Multiple shifts of same type (if we need lots in that direction)
+            const maxShifts = Math.min(
+                Math.floor(baseStats[shift.from] / 5),
+                Math.ceil(deficits[shift.to] / 5),
+                maxTuningMods
+            );
+
+            for (let numShifts = 2; numShifts <= maxShifts; numShifts++) {
+                const shiftMods = [];
+                for (let s = 0; s < numShifts; s++) {
+                    shiftMods.push({ type: 'shift', from: shift.from, to: shift.to });
+                }
+                tuningModOptions.push(shiftMods);
+            }
+        }
+
+        // Mixed combinations - shifts + boosts (only the most promising ones)
+        if (armorPiece && armorPiece.stats && maxTuningMods >= 2 && productiveShifts.length > 0) {
+            const { primary, secondary } = getArmorType(armorPiece.stats);
+            const nonPrimaryStats = statKeys.filter(stat => stat !== primary && stat !== secondary);
+            const neededNonPrimaryStats = nonPrimaryStats.filter(stat => deficits[stat] > 0);
+
+            if (neededNonPrimaryStats.length >= 3) {
+                const bestBoostCombo = neededNonPrimaryStats.slice(0, 3);
+                const bestShift = productiveShifts[0];
+
+                // One boost + one shift
+                tuningModOptions.push([
+                    { type: 'boost', stats: bestBoostCombo },
+                    { type: 'shift', from: bestShift.from, to: bestShift.to }
+                ]);
+            }
+        }
+
+        return tuningModOptions;
+    }
+
+    // Apply tuning mods
+    function applyTuningMods(baseStats, tuningMods) {
         let workingStats = { ...baseStats };
         const modsUsed = [];
-        let remainingMajor = availableMods.major;
-        let remainingMinor = availableMods.minor;
-        let remainingTuning = availableMods.tuning;
-        const statKeys = Object.keys(targets);
 
-        // --- Phase 0: Apply Custom Fragment Bonuses ---
+        for (const mod of tuningMods) {
+            if (mod.type === 'shift') {
+                if (workingStats[mod.from] >= 5) {
+                    workingStats[mod.from] -= 5;
+                    workingStats[mod.to] += 5;
+                    modsUsed.push(`Tuning: +5 ${getStatName(mod.to)}, -5 ${getStatName(mod.from)}`);
+                }
+            } else if (mod.type === 'boost') {
+                mod.stats.forEach(stat => {
+                    workingStats[stat] += 1;
+                });
+                const statNames = mod.stats.map(stat => getStatName(stat)).join('/');
+                modsUsed.push(`Tuning: +1 ${statNames}`);
+            }
+        }
+
+        return { workingStats, modsUsed };
+    }
+
+    // IMPROVED mod application - much smarter about reaching targets efficiently
+    function applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods, customFragmentBonuses, armorPiece = null) {
+        let workingStats = { ...baseStats };
+        let modsUsed = [];
+
+        // Apply fragment bonuses first
         let hasFragmentBonuses = false;
         for (const stat in customFragmentBonuses) {
-            if (customFragmentBonuses[stat] > 0) {
-                workingStats[stat] += customFragmentBonuses[stat];
+            const bonus = customFragmentBonuses[stat];
+            if (bonus !== 0) {
+                workingStats[stat] += bonus;
                 hasFragmentBonuses = true;
             }
         }
         if (hasFragmentBonuses) {
             const fragmentDescription = Object.keys(customFragmentBonuses)
-                .filter(stat => customFragmentBonuses[stat] > 0)
-                .map(stat => `+${customFragmentBonuses[stat]} ${getStatName(stat)}`)
+                .filter(stat => customFragmentBonuses[stat] !== 0)
+                .map(stat => {
+                    const bonus = customFragmentBonuses[stat];
+                    const sign = bonus > 0 ? '+' : '';
+                    return `${sign}${bonus} ${getStatName(stat)}`;
+                })
                 .join(', ');
             modsUsed.push(`Fragment/Font Mods: ${fragmentDescription}`);
         }
 
-        // --- Phase 1: Strategic Tuning Mod Application (if enabled) ---
+        let bestResult = { workingStats, modsUsed: [] };
+        let bestScore = -Infinity;
+
         if (useTuningMods) {
-            const maxTuningMods = availableMods.tuning; // Use the passed tuning mod limit
-            for (let i = 0; i < maxTuningMods; i++) {
-                if (remainingTuning <= 0) break;
+            const tuningOptions = generateBestTuningMods(workingStats, targets, availableMods.tuning, armorPiece);
 
-                // Find the best stat to increase (highest priority deficit)
-                const deficits = statKeys
-                    .map(stat => ({ stat, deficit: Math.max(0, targets[stat] - workingStats[stat]) }))
-                    .filter(d => d.deficit > 0) // Only consider stats that need improvement
-                    .sort((a, b) => {
-                        const priorityWeight = { high: 3, normal: 2, low: 1 };
-                        return priorityWeight[priorities[b.stat]] - priorityWeight[priorities[a.stat]];
-                    });
+            for (const tuningMods of tuningOptions) {
+                const tuningResult = applyTuningMods(workingStats, tuningMods);
+                const regularResult = applyRegularMods(tuningResult.workingStats, targets, priorities, maxStats, availableMods.major, availableMods.minor);
 
-                if (deficits.length === 0) break; // No more deficits to fill
-                const statToIncrease = deficits[0].stat;
+                const finalStats = regularResult.finalStats;
+                const meetsAllTargets = Object.keys(targets).every(stat => finalStats[stat] >= targets[stat]);
+                const score = calculatePriorityScore(finalStats, targets, priorities, maxStats, meetsAllTargets);
 
-                // Find the best stat to decrease (prefer stats over max, then low priority, then most excess)
-                const sources = statKeys
-                    .filter(stat => stat !== statToIncrease && workingStats[stat] >= 5) // Can't take from target stat, need at least 5 points
-                    .map(stat => {
-                        let score = 0;
-                        // Strongly prefer taking from stats that are over their max preference
-                        if (workingStats[stat] > maxStats[stat]) score += 1000;
-                        // Then prefer low priority stats
-                        if (priorities[stat] === 'low') score += 100;
-                        else if (priorities[stat] === 'normal') score += 50;
-                        // Then prefer stats with excess over target
-                        score += Math.max(0, workingStats[stat] - targets[stat]);
-                        return { stat, score };
-                    })
-                    .sort((a, b) => b.score - a.score);
-
-                if (sources.length === 0) break; // No stat to safely take points from
-                const statToDecrease = sources[0].stat;
-
-                // Apply the tuning mod
-                workingStats[statToIncrease] += 5;
-                workingStats[statToDecrease] -= 5;
-                modsUsed.push(`Tuning: +5 ${getStatName(statToIncrease)}, -5 ${getStatName(statToDecrease)}`);
-                remainingTuning--;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestResult = {
+                        workingStats: finalStats,
+                        modsUsed: [...tuningResult.modsUsed, ...regularResult.modsUsed]
+                    };
+                }
             }
+        } else {
+            const regularResult = applyRegularMods(workingStats, targets, priorities, maxStats, availableMods.major, availableMods.minor);
+            bestResult = {
+                workingStats: regularResult.finalStats,
+                modsUsed: regularResult.modsUsed
+            };
         }
 
-        // --- Phase 2: Standard Major/Minor Mod Application ---
-        const statOrder = Object.keys(targets).sort((a, b) => {
-            const priorityWeight = { high: 3, normal: 2, low: 1 };
-            const aWeight = priorityWeight[priorities[a]];
-            const bWeight = priorityWeight[priorities[b]];
-            if (aWeight !== bWeight) return bWeight - aWeight;
-            return (targets[b] - workingStats[b]) - (targets[a] - workingStats[a]);
+        return {
+            finalStats: bestResult.workingStats,
+            modsUsed: [...modsUsed, ...bestResult.modsUsed]
+        };
+    }
+
+    // IMPROVED regular mod application - smarter targeting
+    function applyRegularMods(workingStats, targets, priorities, maxStats, remainingMajor, remainingMinor) {
+        let stats = { ...workingStats };
+        const modsUsed = [];
+
+        // Calculate deficits for each stat
+        const statDeficits = Object.keys(targets).map(stat => ({
+            stat,
+            deficit: Math.max(0, targets[stat] - stats[stat]),
+            priority: priorities[stat],
+            target: targets[stat]
+        }));
+
+        // Sort by priority and deficit, but be smarter about it
+        const priorityWeight = { high: 3, normal: 2, low: 1 };
+        statDeficits.sort((a, b) => {
+            // First, prioritize stats that actually have targets > 0
+            if (a.target === 0 && b.target > 0) return 1;
+            if (a.target > 0 && b.target === 0) return -1;
+
+            // Then by deficit existence (stats that need help)
+            if (a.deficit === 0 && b.deficit > 0) return 1;
+            if (a.deficit > 0 && b.deficit === 0) return -1;
+
+            // Then by priority weight * deficit
+            const aScore = priorityWeight[a.priority] * a.deficit;
+            const bScore = priorityWeight[b.priority] * b.deficit;
+            if (aScore !== bScore) return bScore - aScore;
+
+            // Finally by raw priority
+            return priorityWeight[b.priority] - priorityWeight[a.priority];
         });
 
-        for (const stat of statOrder) {
-            // Apply major mods - prefer staying under max but don't prevent if needed for target
-            while (remainingMajor > 0 && workingStats[stat] < targets[stat]) {
-                // Prefer not to exceed max, but allow if necessary to meet target
-                if (workingStats[stat] + 10 <= maxStats[stat] || workingStats[stat] < targets[stat]) {
-                    workingStats[stat] += 10;
-                    remainingMajor--;
-                    modsUsed.push(`Major ${getStatName(stat)} Mod (+10)`);
-                } else {
-                    break; // Don't add if it would exceed max and we've already met target
-                }
-            }
+        // Apply major mods more intelligently
+        for (const statInfo of statDeficits) {
+            const stat = statInfo.stat;
+            while (remainingMajor > 0 && stats[stat] < targets[stat]) {
+                // Check if a major mod would overshoot by too much
+                const wouldOvershoot = (stats[stat] + 10) > targets[stat];
+                const overshootAmount = Math.max(0, (stats[stat] + 10) - targets[stat]);
 
-            // Apply minor mods - same logic as major
-            while (remainingMinor > 0 && workingStats[stat] < targets[stat]) {
-                if (workingStats[stat] + 5 <= maxStats[stat] || workingStats[stat] < targets[stat]) {
-                    workingStats[stat] += 5;
-                    remainingMinor--;
-                    modsUsed.push(`Minor ${getStatName(stat)} Mod (+5)`);
-                } else {
-                    break;
+                // If we would overshoot by more than 7, consider using minor mods instead
+                if (wouldOvershoot && overshootAmount > 7 && remainingMinor >= 2) {
+                    break; // Let minor mods handle this
                 }
+
+                stats[stat] += 10;
+                remainingMajor--;
+                modsUsed.push(`Major ${getStatName(stat)} Mod (+10)`);
             }
         }
 
-        return { finalStats: workingStats, modsUsed };
+        // Apply minor mods with similar intelligence
+        for (const statInfo of statDeficits) {
+            const stat = statInfo.stat;
+            while (remainingMinor > 0 && stats[stat] < targets[stat]) {
+                // Check if a minor mod would overshoot by too much
+                const wouldOvershoot = (stats[stat] + 5) > targets[stat];
+                const overshootAmount = Math.max(0, (stats[stat] + 5) - targets[stat]);
+
+                // Only apply if overshoot is reasonable (≤3) or if it's high priority
+                if (wouldOvershoot && overshootAmount > 3 && priorities[stat] !== 'high') {
+                    continue;
+                }
+
+                stats[stat] += 5;
+                remainingMinor--;
+                modsUsed.push(`Minor ${getStatName(stat)} Mod (+5)`);
+            }
+        }
+
+        return { finalStats: stats, modsUsed };
     }
 
-    // Pre-filters armor pieces to find the most efficient ones for the given targets.
+    // IMPROVED armor piece selection - better target alignment
     function getOptimalArmorPieces(targets, priorities, availablePieces) {
         const priorityWeight = { high: 3, normal: 2, low: 1 };
+
         return availablePieces.map(piece => {
             let efficiencyScore = 0;
+            let wasteScore = 0;
+            let targetAlignment = 0;
+
             for (const stat in piece.stats) {
-                // Reward pieces that have stats we care about
-                if (targets[stat] > 0) {
-                    efficiencyScore += piece.stats[stat] * priorityWeight[priorities[stat]];
-                }
-                // Penalize pieces for having stats we don't care about (target is 0)
-                else {
-                    efficiencyScore -= piece.stats[stat];
+                const statValue = piece.stats[stat];
+                const targetValue = targets[stat];
+                const priority = priorities[stat];
+                const weight = priorityWeight[priority];
+
+                if (targetValue > 0) {
+                    // Positive contribution for stats we need
+                    const contribution = Math.min(statValue, targetValue); // Don't over-reward excess
+                    efficiencyScore += contribution * weight * 2;
+                    targetAlignment += contribution;
+
+                    // Small penalty for excess beyond target
+                    const excess = Math.max(0, statValue - targetValue);
+                    if (excess > 0) {
+                        if (priority === 'low') {
+                            wasteScore += excess * 0.5; // Heavy penalty for low priority waste
+                        } else {
+                            wasteScore += excess * 0.1; // Light penalty for normal/high priority excess
+                        }
+                    }
+                } else if (statValue > 0) {
+                    // Penalty for stats we don't need at all
+                    wasteScore += statValue * 0.2;
                 }
             }
-            return { ...piece, efficiencyScore };
-        }).sort((a, b) => b.efficiencyScore - a.efficiencyScore);
+
+            // Bonus for pieces that help multiple target stats
+            const helpfulStats = Object.keys(piece.stats).filter(stat =>
+                piece.stats[stat] > 0 && targets[stat] > 0
+            ).length;
+            efficiencyScore += helpfulStats * 15;
+
+            const finalScore = efficiencyScore - wasteScore + targetAlignment;
+
+            return { ...piece, efficiencyScore: finalScore, targetAlignment };
+        }).sort((a, b) => {
+            // Sort by efficiency score primarily
+            if (Math.abs(a.efficiencyScore - b.efficiencyScore) < 5) {
+                return b.targetAlignment - a.targetAlignment; // Tie-breaker: better target alignment
+            }
+            return b.efficiencyScore - a.efficiencyScore;
+        });
     }
 
+    // Main solution finder with improved logic
     function findSolutions(targets, priorities, maxStats, availableMods, useTuningMods, customArmorPiece, useExoticArmor, customFragmentBonuses) {
         const solutions = [];
         const processedCombinations = new Set();
-        const maxSolutions = 500;
+        const maxSolutions = 2000;
 
-        // Get available armor pieces
+        // Get available pieces
         const availablePieces = getAvailableArmorPieces();
+        let workingPieces = getOptimalArmorPieces(targets, priorities, availablePieces);
 
-        // Pre-filter to get the most efficient pieces
-        let optimalPieces = getOptimalArmorPieces(targets, priorities, availablePieces).slice(0, 15);
+        console.log(`Starting with ${workingPieces.length} armor pieces...`);
 
-        // Ensure we have enough regular pieces when forcing exotic
-        if (useExoticArmor) {
-            const regularPieces = optimalPieces.filter(p => !p.isExotic);
-            const exoticPieces = optimalPieces.filter(p => p.isExotic);
+        // Use more pieces if we have specific targets
+        const hasSpecificTargets = Object.values(targets).some(val => val > 0);
+        const piecesToUse = hasSpecificTargets ? Math.max(workingPieces.length, 30) : 24;
+        workingPieces = workingPieces.slice(0, piecesToUse);
 
-            // If we don't have enough regular pieces, add more
-            if (regularPieces.length < 5) {
-                const additionalRegular = availablePieces
-                    .filter(p => !p.isExotic && !optimalPieces.some(op => op.name === p.name))
-                    .slice(0, 10 - regularPieces.length);
-                optimalPieces = [...optimalPieces, ...additionalRegular];
-            }
+        console.log(`Using top ${workingPieces.length} armor pieces for combinations...`);
 
-            // Ensure we have exotic pieces
-            if (exoticPieces.length === 0) {
-                console.error('No exotic pieces available but exotic armor is forced');
-                return []; // Return empty if no exotic pieces available
-            }
-        }
-
-        // Generate combinations based on current settings
-        const generateCombinations = () => {
+        // Generate combinations more systematically
+        const generateAllCombinations = () => {
             const combinations = [];
+            const maxCombinations = 6000; // Increased for better results
 
             if (useExoticArmor) {
-                // Force exactly one exotic piece per combination
-                const regularPieces = optimalPieces.filter(p => !p.isExotic);
-                const exoticPieces = optimalPieces.filter(p => p.isExotic);
+                const regularPieces = workingPieces.filter(p => !p.isExotic);
+                const exoticPieces = workingPieces.filter(p => p.isExotic);
 
-                // For each exotic piece, try it in each position
-                for (const exoticPiece of exoticPieces) {
-                    const positions = [0, 1, 2, 3, 4]; // helmet, arms, chest, legs, classItem
+                console.log(`Exotic mode: ${regularPieces.length} regular, ${exoticPieces.length} exotic pieces`);
 
-                    for (const exoticPosition of positions) {
-                        // Create all combinations with this exotic in the specified position
-                        const piecesToUse = [
-                            exoticPosition === 0 ? [exoticPiece] : regularPieces, // helmet
-                            exoticPosition === 1 ? [exoticPiece] : regularPieces, // arms
-                            exoticPosition === 2 ? [exoticPiece] : regularPieces, // chest
-                            exoticPosition === 3 ? [exoticPiece] : regularPieces, // legs
-                            exoticPosition === 4 ? [exoticPiece] : regularPieces  // classItem
-                        ];
+                if (exoticPieces.length === 0) {
+                    console.error('No exotic pieces available');
+                    return [];
+                }
 
-                        for (const helmet of piecesToUse[0]) {
-                            for (const arms of piecesToUse[1]) {
-                                for (const chest of piecesToUse[2]) {
-                                    for (const legs of piecesToUse[3]) {
-                                        for (const classItem of piecesToUse[4]) {
-                                            if (combinations.length >= maxSolutions) return combinations;
+                // For each exotic piece, try it in each armor slot position
+                for (const exoticPiece of exoticPieces.slice(0, 12)) { // More exotic pieces
+                    for (let exoticPos = 0; exoticPos < 5; exoticPos++) {
+                        const topRegular = regularPieces.slice(0, 20); // More regular pieces
 
-                                            const armorCombination = [helmet, arms, chest, legs, classItem];
+                        for (let i = 0; i < Math.min(topRegular.length, 15) && combinations.length < maxCombinations; i++) {
+                            for (let j = 0; j < Math.min(topRegular.length, 15) && combinations.length < maxCombinations; j++) {
+                                for (let k = 0; k < Math.min(topRegular.length, 15) && combinations.length < maxCombinations; k++) {
+                                    for (let l = 0; l < Math.min(topRegular.length, 15) && combinations.length < maxCombinations; l++) {
+                                        const armorSet = new Array(5);
+                                        const regularIndices = [i, j, k, l, i % topRegular.length];
 
-                                            // Verify exactly 1 exotic
-                                            const exoticCount = armorCombination.filter(p => p.isExotic).length;
-                                            if (exoticCount !== 1) continue;
-
-                                            // If custom armor is required, ensure it's included EXACTLY ONCE
-                                            if (customArmorPiece) {
-                                                const customCount = armorCombination.filter(p => p.isCustom).length;
-                                                if (customCount !== 1) continue;
+                                        for (let slot = 0; slot < 5; slot++) {
+                                            if (slot === exoticPos) {
+                                                armorSet[slot] = exoticPiece;
+                                            } else {
+                                                const regIndex = slot < 4 ? regularIndices[slot] : regularIndices[4];
+                                                armorSet[slot] = topRegular[regIndex];
                                             }
+                                        }
 
-                                            combinations.push(armorCombination);
+                                        const exoticCount = armorSet.filter(p => p.isExotic).length;
+                                        if (exoticCount === 1) {
+                                            combinations.push(armorSet);
                                         }
                                     }
                                 }
@@ -542,70 +793,47 @@
                     }
                 }
             } else if (customArmorPiece) {
-                // Custom armor enabled but no exotic - ensure exactly 1 custom piece
-                const regularPieces = optimalPieces.filter(p => !p.isExotic && !p.isCustom);
+                const regularPieces = workingPieces.filter(p => !p.isExotic && !p.isCustom);
+                const topRegular = regularPieces.slice(0, 20);
 
-                // Add the custom piece to the regular pieces for selection
-                const allNonExoticPieces = [customArmorPiece, ...regularPieces];
+                console.log(`Custom armor mode: ${topRegular.length} regular pieces`);
 
-                const positions = [0, 1, 2, 3, 4]; // helmet, arms, chest, legs, classItem
+                for (let customPos = 0; customPos < 5; customPos++) {
+                    for (let i = 0; i < Math.min(topRegular.length, 15) && combinations.length < maxCombinations; i++) {
+                        for (let j = 0; j < Math.min(topRegular.length, 15) && combinations.length < maxCombinations; j++) {
+                            for (let k = 0; k < Math.min(topRegular.length, 15) && combinations.length < maxCombinations; k++) {
+                                for (let l = 0; l < Math.min(topRegular.length, 15) && combinations.length < maxCombinations; l++) {
+                                    const armorSet = new Array(5);
+                                    const regularIndices = [i, j, k, l, i % topRegular.length];
 
-                for (const customPosition of positions) {
-                    // Create all combinations with the custom piece in the specified position
-                    const piecesToUse = [
-                        customPosition === 0 ? [customArmorPiece] : regularPieces, // helmet
-                        customPosition === 1 ? [customArmorPiece] : regularPieces, // arms
-                        customPosition === 2 ? [customArmorPiece] : regularPieces, // chest
-                        customPosition === 3 ? [customArmorPiece] : regularPieces, // legs
-                        customPosition === 4 ? [customArmorPiece] : regularPieces  // classItem
-                    ];
-
-                    for (const helmet of piecesToUse[0]) {
-                        for (const arms of piecesToUse[1]) {
-                            for (const chest of piecesToUse[2]) {
-                                for (const legs of piecesToUse[3]) {
-                                    for (const classItem of piecesToUse[4]) {
-                                        if (combinations.length >= maxSolutions) return combinations;
-
-                                        const armorCombination = [helmet, arms, chest, legs, classItem];
-
-                                        // Verify exactly 1 custom piece
-                                        const customCount = armorCombination.filter(p => p.isCustom).length;
-                                        if (customCount !== 1) continue;
-
-                                        // Verify no exotic pieces
-                                        const exoticCount = armorCombination.filter(p => p.isExotic).length;
-                                        if (exoticCount > 0) continue;
-
-                                        combinations.push(armorCombination);
+                                    for (let slot = 0; slot < 5; slot++) {
+                                        if (slot === customPos) {
+                                            armorSet[slot] = customArmorPiece;
+                                        } else {
+                                            const regIndex = slot < 4 ? regularIndices[slot] : regularIndices[4];
+                                            armorSet[slot] = topRegular[regIndex];
+                                        }
                                     }
+
+                                    combinations.push(armorSet);
                                 }
                             }
                         }
                     }
                 }
             } else {
-                // Regular combinations (no exotics or custom armor required)
-                const nonExoticPieces = optimalPieces.filter(p => !p.isExotic);
+                // Regular armor only - comprehensive but smarter
+                const nonExoticPieces = workingPieces.filter(p => !p.isExotic);
+                const topPieces = nonExoticPieces.slice(0, 25); // More pieces for better coverage
 
-                for (const helmet of nonExoticPieces) {
-                    for (const arms of nonExoticPieces) {
-                        for (const chest of nonExoticPieces) {
-                            for (const legs of nonExoticPieces) {
-                                for (const classItem of nonExoticPieces) {
-                                    if (combinations.length >= maxSolutions) return combinations;
+                console.log(`Regular mode: ${topPieces.length} pieces`);
 
-                                    const armorCombination = [helmet, arms, chest, legs, classItem];
-
-                                    // Verify no exotic pieces
-                                    const exoticCount = armorCombination.filter(p => p.isExotic).length;
-                                    if (exoticCount > 0) continue;
-
-                                    // Verify no custom pieces (since custom armor is not enabled)
-                                    const customCount = armorCombination.filter(p => p.isCustom).length;
-                                    if (customCount > 0) continue;
-
-                                    combinations.push(armorCombination);
+                for (let i = 0; i < Math.min(topPieces.length, 18) && combinations.length < maxCombinations; i++) {
+                    for (let j = 0; j < Math.min(topPieces.length, 18) && combinations.length < maxCombinations; j++) {
+                        for (let k = 0; k < Math.min(topPieces.length, 18) && combinations.length < maxCombinations; k++) {
+                            for (let l = 0; l < Math.min(topPieces.length, 18) && combinations.length < maxCombinations; l++) {
+                                for (let m = 0; m < Math.min(topPieces.length, 18) && combinations.length < maxCombinations; m++) {
+                                    combinations.push([topPieces[i], topPieces[j], topPieces[k], topPieces[l], topPieces[m]]);
                                 }
                             }
                         }
@@ -616,16 +844,25 @@
             return combinations;
         };
 
-        const combinations = generateCombinations();
+        const combinations = generateAllCombinations();
+        console.log(`Generated ${combinations.length} armor combinations to test...`);
 
+        // Test each combination
+        let processedCount = 0;
         for (const armorCombination of combinations) {
             if (solutions.length >= maxSolutions) break;
 
-            const combinationKey = armorCombination.map(p => p.name).sort().join(',');
+            processedCount++;
+            if (processedCount % 1000 === 0) {
+                console.log(`Processed ${processedCount}/${combinations.length} combinations...`);
+            }
 
+            // Create combination key to avoid duplicates
+            const combinationKey = armorCombination.map(p => p.name).sort().join('|');
             if (processedCombinations.has(combinationKey)) continue;
             processedCombinations.add(combinationKey);
 
+            // Calculate base stats from armor
             const baseStats = { h: 0, m: 0, g: 0, s: 0, c: 0, w: 0 };
             for (const piece of armorCombination) {
                 for (const stat in baseStats) {
@@ -633,30 +870,51 @@
                 }
             }
 
-            const result = applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods, customFragmentBonuses);
+            // Apply mods and get final result
+            const result = applyMods(baseStats, targets, priorities, maxStats, availableMods, useTuningMods, customFragmentBonuses, armorCombination[0]);
 
+            // Check if solution meets all targets
             const meetsAllTargets = Object.keys(targets).every(stat => result.finalStats[stat] >= targets[stat]);
             const priorityScore = calculatePriorityScore(result.finalStats, targets, priorities, maxStats, meetsAllTargets);
 
             solutions.push({
-                armor: armorCombination.map(p => ({ name: p.name, isExotic: p.isExotic, isCustom: p.isCustom })).sort((a, b) => a.name.localeCompare(b.name)),
+                armor: armorCombination.map(p => ({
+                    name: p.name,
+                    isExotic: p.isExotic || false,
+                    isCustom: p.isCustom || false
+                })),
                 mods: result.modsUsed,
                 final: result.finalStats,
                 meetsAllTargets,
                 priorityScore,
+                baseStats
             });
         }
 
-        return solutions;
+        console.log(`Found ${solutions.length} total solutions`);
+
+        // Sort solutions - perfect solutions first, then by score
+        const sortedSolutions = solutions.sort((a, b) => {
+            // Perfect solutions always come first
+            if (a.meetsAllTargets && !b.meetsAllTargets) return -1;
+            if (!a.meetsAllTargets && b.meetsAllTargets) return 1;
+
+            // Within same category, sort by priority score
+            return b.priorityScore - a.priorityScore;
+        });
+
+        const perfectSolutions = sortedSolutions.filter(s => s.meetsAllTargets);
+        console.log(`Found ${perfectSolutions.length} solutions that meet all targets`);
+
+        return sortedSolutions;
     }
 
     function formatStats(stats, maxStats) {
-        // Sort stats to always display in the same order
         const orderedStats = ['h', 'm', 'g', 's', 'c', 'w'];
         return orderedStats.map(stat => {
             const value = stats[stat];
             const maxStat = maxStats[stat];
-            const isOverMax = value > maxStat && maxStat < MAX_STAT_VALUE; // Only show as over-max if user set a specific limit
+            const isOverMax = value > maxStat && maxStat < MAX_STAT_VALUE;
             const displayValue = isOverMax ? `${value}⚠️` : value;
             return `${getStatName(stat).substring(0, 1)}:${displayValue}`;
         }).join(' ');
@@ -681,11 +939,11 @@
             w: getMaxStatValue('weapons-max'),
         };
 
-        // Remove duplicate solutions.
+        // Remove duplicate solutions
         const uniqueSolutions = [];
         const seenCombinations = new Set();
         for (const solution of allSolutions) {
-            const combinationKey = solution.armor.map(p => p.name).join(',');
+            const combinationKey = solution.armor.map(p => p.name).sort().join('|');
             if (!seenCombinations.has(combinationKey)) {
                 seenCombinations.add(combinationKey);
                 uniqueSolutions.push(solution);
@@ -694,9 +952,6 @@
 
         const metTargets = uniqueSolutions.filter(s => s.meetsAllTargets);
         const partialTargets = uniqueSolutions.filter(s => !s.meetsAllTargets);
-
-        metTargets.sort((a, b) => b.priorityScore - a.priorityScore);
-        partialTargets.sort((a, b) => b.priorityScore - a.priorityScore);
 
         const solutionsToRender = metTargets.length > 0 ? metTargets : partialTargets;
 
@@ -709,8 +964,10 @@
         if (solutionsPageIndex === 0) {
             if (metTargets.length > 0) {
                 html += '<h2 class="results-group-header met-target-header">✔️ Builds Meeting All Targets</h2>';
+                console.log(`Found ${metTargets.length} builds that meet all targets!`);
             } else {
                 html += '<h2 class="results-group-header partial-target-header">⚠️ Closest Alternative Builds</h2>';
+                console.log(`No builds meet all targets. Showing ${partialTargets.length} closest alternatives.`);
             }
         }
 

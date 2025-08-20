@@ -10,7 +10,7 @@
     <div class="container">
         <h1>Gear Stat Calculator</h1>
         <p>
-            This tool calculates builds using masterworked T5 armor. (left number is min targeted stat, right number is max targeted stat). 
+            This tool calculates builds using masterworked T5 armor. (left number is min targeted stat, right number is max targeted stat).
             You can also prioritize stats to go higher and deprioritize stats you want to be lower if multiple combos meet your desired stats.
             (dm wauby on discord with any bugs or issues you find)
         </p>
@@ -190,39 +190,39 @@
                 </label>
                 <div class="toggle-description">
                     <strong>Enable Custom Fragment/Font Mods</strong>
-                    <small>Add custom stat bonuses from fragments, font mods, or other sources.</small>
+                    <small>Add custom stat bonuses/penalties from fragments, font mods, or other sources.</small>
                 </div>
             </div>
 
             <div id="customFragmentSection" class="custom-fragment-section" style="display: none;">
                 <div class="fragment-input-grid">
                     <div class="input-group">
-                        <label for="fragmentHealth">Health Bonus</label>
-                        <input type="number" id="fragmentHealth" value="0" min="0" max="100" step="5">
+                        <label for="fragmentHealth">Health Bonus/Penalty</label>
+                        <input type="number" id="fragmentHealth" value="0" min="-100" max="100" step="5">
                     </div>
                     <div class="input-group">
-                        <label for="fragmentMelee">Melee Bonus</label>
-                        <input type="number" id="fragmentMelee" value="0" min="0" max="100" step="5">
+                        <label for="fragmentMelee">Melee Bonus/Penalty</label>
+                        <input type="number" id="fragmentMelee" value="0" min="-100" max="100" step="5">
                     </div>
                     <div class="input-group">
-                        <label for="fragmentGrenade">Grenade Bonus</label>
-                        <input type="number" id="fragmentGrenade" value="0" min="0" max="100" step="5">
+                        <label for="fragmentGrenade">Grenade Bonus/Penalty</label>
+                        <input type="number" id="fragmentGrenade" value="0" min="-100" max="100" step="5">
                     </div>
                     <div class="input-group">
-                        <label for="fragmentSuper">Super Bonus</label>
-                        <input type="number" id="fragmentSuper" value="0" min="0" max="100" step="5">
+                        <label for="fragmentSuper">Super Bonus/Penalty</label>
+                        <input type="number" id="fragmentSuper" value="0" min="-100" max="100" step="5">
                     </div>
                     <div class="input-group">
-                        <label for="fragmentClass">Class Bonus</label>
-                        <input type="number" id="fragmentClass" value="0" min="0" max="100" step="5">
+                        <label for="fragmentClass">Class Bonus/Penalty</label>
+                        <input type="number" id="fragmentClass" value="0" min="-100" max="100" step="5">
                     </div>
                     <div class="input-group">
-                        <label for="fragmentWeapons">Weapons Bonus</label>
-                        <input type="number" id="fragmentWeapons" value="0" min="0" max="100" step="5">
+                        <label for="fragmentWeapons">Weapons Bonus/Penalty</label>
+                        <input type="number" id="fragmentWeapons" value="0" min="-100" max="100" step="5">
                     </div>
                 </div>
                 <div class="fragment-description">
-                    <p><strong>Note:</strong> These bonuses are applied after all armor and regular mods are calculated. Use this for fragment mods, font mods, or any other stat bonuses not covered by regular armor mods.</p>
+                    <p><strong>Note:</strong> These bonuses/penalties are applied after all armor and regular mods are calculated. Use this for fragment mods, font mods, or any other stat bonuses or penalties not covered by regular armor mods. Negative values are allowed for stat penalties.</p>
                 </div>
             </div>
         </div>
